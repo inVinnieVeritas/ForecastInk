@@ -269,25 +269,25 @@ draw_dashboard(){
   "$FBINK" -q -b -g file="$BASE/assets/ui/station-bg.png",x=0,y=0,w=758,h=1024 >/dev/null 2>&1
 
   # HEADER
-  draw_text 36 8 978 10 290 BOLD "$TODAY"
+  draw_text 40 8 957 10 290 BOLD "$TODAY"
   "$FBINK" -q -b -g file="$BASE/assets/ui/${BATT_ICON}.png",x=548,y=17,w=62,h=33 >/dev/null 2>&1
   draw_num 31 17 973 610 22 BOLD "${BATT}%"
 
   # CURRENT CONDITIONS PANEL
   draw_text 46 126 820 34 420 BOLD "$LOCATION"
-  draw_num 66 124 820 408 24 BOLD "$NOW_SLOT"
+  draw_num 66 124 820 360 28 BOLD "$NOW_SLOT"
 
   "$FBINK" -q -b -g file="$BASE/assets/hero/${ICON}.png",x=36,y=190,w=284,h=284,dither >/dev/null 2>&1
 
-  draw_num 126 198 666 320 12 BOLD "${TEMP}°C"
-  draw_text 62 350 470 320 14 BOLD "$CONDITION"
-  draw_text 47 414 405 320 14 REGULAR "Feels ${FEELS}°C"
-  draw_text 40 470 344 304 10 BOLD "High ${HIGH}°C / Low ${LOW}°C"
+  draw_num 139 198 666 360 28 BOLD "${TEMP}°C"
+  draw_text 61 350 470 360 28 BOLD "$CONDITION"
+  draw_text 54 420 405 360 28 BOLD "Feels ${FEELS}°C"
+  draw_text 40 515 344 360 28 BOLD "High ${HIGH}°C / Low ${LOW}°C"
 
   "$FBINK" -q -b -g file="$BASE/assets/ui/sunrise.png",x=54,y=500,w=48,h=32,dither >/dev/null 2>&1
-  draw_text 32 500 486 104 344 BOLD "SUNRISE  ${SUNRISE}"
+  draw_text 32 500 486 64 384 BOLD "SUNRISE  ${SUNRISE}"
   "$FBINK" -q -b -g file="$BASE/assets/ui/sunset.png",x=54,y=540,w=48,h=32,dither >/dev/null 2>&1
-  draw_text 32 540 446 104 344 BOLD "SUNSET   ${SUNSET}"
+  draw_text 32 540 446 64 384 BOLD "SUNSET   ${SUNSET}"
 
   # NEXT FOUR HOURS PANEL
   X1=18
