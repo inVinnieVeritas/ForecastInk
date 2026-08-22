@@ -26,7 +26,7 @@ NBFONT="$(pick_font   /usr/java/lib/fonts/Futura_LT_75_Bold.ttf   /usr/java/lib/
 
 MODE="$1"
 case "$MODE" in
-  live|preview-views) ;;
+  live|live-hourly|preview-views) ;;
   *) MODE="preview" ;;
 esac
 VIEW_MODE=0
@@ -107,14 +107,17 @@ set_forecast_slot(){
   V="$(nth_line /tmp/kd_htemps "$N")"
   C="$(nth_line /tmp/kd_hcodes "$N")"
   D="$(nth_line /tmp/kd_hisday "$N")"
+  R="$(nth_line /tmp/kd_hrain "$N")"
   [ -n "$V" ] || V="--"
   [ -n "$C" ] || C=3
+  case "$R" in \'\'|null|*[!0-9]*) R=0 ;; esac
   if [ -z "$D" ]; then
     case "$TARGET_HOUR" in 08|8|15|19) D=1 ;; *) D=0 ;; esac
   fi
   eval ${PREFIX}_LABEL=\"$LABEL\"
   eval ${PREFIX}_TEMP=\"$(round_temp "$V")\"
   eval ${PREFIX}_ICON=\"$(icon_name "$C" "$D")\"
+  eval ${PREFIX}_RAIN="$R"
 }
 
 build_daypart_slots(){
@@ -273,6 +276,7 @@ fetch_weather(){
     eval P${I}_LABEL=\"---\"
     eval P${I}_TEMP=\"--\"
     eval H${I}_RAIN=\"0\"
+    eval P${I}_RAIN="0"
     eval P${I}_ICON=\"cloudy\"
     eval D${I}_LABEL=\"---\"
     eval D${I}_HIGH=\"--\"
@@ -374,10 +378,13 @@ draw_dayparts_panel(){
     eval LAB=\$P${I}_LABEL
     eval TMPV=\$P${I}_TEMP
     eval ICO=\$P${I}_ICON
+    eval RAINV=\$P${I}_RAIN
 
     draw_cell 23 640 350 "$X" "$COLW" BOLD "$LAB"
     "$FBINK" -q -b -g file="$BASE/assets/weather/${ICO}.png",x="$((X + 29))",y=695,w=120,h=120,dither >/dev/null 2>&1
     draw_num_cell 48 824 138 "$X" "$COLW" BOLD "${TMPV}°"
+    "$FBINK" -q -b -g file="$BASE/assets/ui/rain-probability.png",x="$((X + 18))",y=904,w=32,h=32,dither >/dev/null 2>&1
+    draw_num_cell 36 900 64 "$((X + 8))" "$((COLW - 8))" BOLD "${RAINV}%"
   done
 }
 
@@ -441,13 +448,9 @@ draw_dashboard(){
 
   draw_num 139 198 666 360 28 BOLD "${TEMP}°C"
   draw_text 61 350 470 360 28 BOLD "$CONDITION"
-  if [ "$CURRENT_RAIN" -ge 15 ] 2>/dev/null; then
-    draw_text 44 420 405 360 165 BOLD "Feels ${FEELS}°C"
-    "$FBINK" -q -b -g file="$BASE/assets/ui/rain-probability.png",x=598,y=432,w=28,h=28,dither >/dev/null 2>&1
-    draw_text 44 420 405 628 28 BOLD "${CURRENT_RAIN}%"
-  else
-    draw_text 54 420 405 360 28 BOLD "Feels ${FEELS}°C"
-  fi
+  draw_text 44 420 405 360 165 BOLD "Feels ${FEELS}°C"
+  "$FBINK" -q -b -g file="$BASE/assets/ui/rain-probability.png",x=598,y=432,w=28,h=28,dither >/dev/null 2>&1
+  draw_text 44 420 405 628 28 BOLD "${CURRENT_RAIN}%"
   draw_text 40 515 344 360 28 BOLD "High ${HIGH}°C / Low ${LOW}°C"
 
   "$FBINK" -q -b -g file="$BASE/assets/ui/sunrise.png",x=54,y=500,w=48,h=32,dither >/dev/null 2>&1
@@ -527,8 +530,13 @@ while true; do
   # Give Wi-Fi a few seconds after RTC wake, then fetch current data.
   sleep 12
   if fetch_weather; then
-    VIEW_MODE=$(((VIEW_MODE + 1) % 3))
-    log "forecast view advanced to mode=$VIEW_MODE"
+    if [ "$MODE" = "live-hourly" ]; then
+      VIEW_MODE=0
+      log "forecast view fixed at hourly mode"
+    else
+      VIEW_MODE=$(((VIEW_MODE + 1) % 3))
+      log "forecast view advanced to mode=$VIEW_MODE"
+    fi
   fi
   draw_dashboard
 done
