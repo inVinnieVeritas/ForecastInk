@@ -57,7 +57,7 @@ Because an e-ink screen requires essentially no power to keep a static image vis
 
 PaperCast is currently a **beta / pre-v1 release**.
 
-Current known-good build: **beta75**
+Current known-good build: **beta76**
 
 Tested on:
 
