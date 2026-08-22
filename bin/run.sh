@@ -151,7 +151,7 @@ parse_weather(){
 }
 
 fetch_weather(){
-  URL="https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current=temperature_2m,apparent_temperature,weather_code,is_day&hourly=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=Europe%2FBrussels&forecast_days=2"
+  URL="https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current=temperature_2m,apparent_temperature,weather_code,is_day&hourly=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=Europe%2FBrussels&forecast_days=2&models=dwd_icon_seamless"
 
   rm -f "$TMP"
   log "fetch start"
@@ -303,7 +303,7 @@ draw_dashboard(){
     eval ICO=\$H${I}_ICON
 
     draw_num_cell 32 640 350 "$X" "$COLW" BOLD "$LAB"
-    "$FBINK" -q -b -g file="$BASE/assets/weather/${ICO}.png",x="$((X + 29))",y=706,w=120,h=120,dither >/dev/null 2>&1
+    "$FBINK" -q -b -g file="$BASE/assets/weather/${ICO}.png",x="$((X + 29))",y=695,w=120,h=120,dither >/dev/null 2>&1
     draw_num_cell 48 824 138 "$X" "$COLW" BOLD "${TMPV}°"
   done
 
