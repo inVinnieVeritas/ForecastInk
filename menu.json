@@ -1,6 +1,7 @@
 {
   "items":[{"name":"KindleDash","priority":100,"items":[
     {"name":"Preview beta.45 Header + Sun Events (2 min)","priority":1,"action":"./bin/run.sh preview","exitmenu":true},
-    {"name":"Start Dashboard (top-of-hour)","priority":2,"action":"./bin/run.sh live","exitmenu":true}
+    {"name":"Start Dashboard (top-of-hour)","priority":2,"action":"./bin/run.sh live","exitmenu":true},
+    {"name":"Preview forecast views","priority":3,"action":"./bin/run.sh preview-views","exitmenu":true}
   ]}]
 }
