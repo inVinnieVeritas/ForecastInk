@@ -1,6 +1,34 @@
 {
-  "items":[{"name":"KindleDash","priority":100,"items":[
-    {"name":"Preview beta.45 Header + Sun Events (2 min)","priority":1,"action":"./bin/run.sh preview","exitmenu":true},
-    {"name":"Start Dashboard (top-of-hour)","priority":2,"action":"./bin/run.sh live","exitmenu":true}
-  ]}]
+  "items": [
+    {
+      "name": "PaperCast",
+      "priority": 100,
+      "items": [
+        {
+          "name": "Preview hourly view (2 min)",
+          "priority": 1,
+          "action": "./bin/run.sh preview",
+          "exitmenu": true
+        },
+        {
+          "name": "Preview all 3 views (20 sec each)",
+          "priority": 2,
+          "action": "./bin/run.sh preview-views",
+          "exitmenu": true
+        },
+        {
+          "name": "Start PaperCast — Hourly only",
+          "priority": 3,
+          "action": "./bin/run.sh live-hourly",
+          "exitmenu": true
+        },
+        {
+          "name": "Start PaperCast — Cycle all 3 views",
+          "priority": 4,
+          "action": "./bin/run.sh live",
+          "exitmenu": true
+        }
+      ]
+    }
+  ]
 }
