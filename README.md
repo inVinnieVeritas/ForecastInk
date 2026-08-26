@@ -49,7 +49,7 @@ Because an e-ink display requires essentially no power to retain a static image,
 
 ## Tested hardware
 
-The v0.9.0 public beta has been physically tested with:
+The v0.9.1 public beta has been physically tested with:
 
 - Kindle Paperwhite 1
 - Firmware 5.6.1.1
@@ -60,19 +60,41 @@ The v0.9.0 public beta has been physically tested with:
 
 ## Current status
 
-PaperCast is a public beta release. The current known-good build is **v0.9.0**.
+PaperCast is a public beta release. The current known-good build is **v0.9.1**.
 
 It includes Hourly, Dayparts, and four-day forecast views. Precipitation probability and precipitation amount are shown in the current conditions and forecast views where corresponding Open-Meteo data is available.
 
+## Requirements
+
+- A jailbroken Kindle
+- [KUAL](https://www.mobileread.com/forums/showthread.php?t=203326)
+- Kindle Paperwhite 1 for the currently tested hardware target
+- Firmware 5.6.1.1 for the currently tested firmware target
+
+PaperCast may work on other jailbroken Kindle models or firmware versions, but they have not yet been validated.
+
 ## Installation
 
-PaperCast currently requires a jailbroken Kindle with KUAL installed. The extension uses the existing `KindleDash/` runtime directory name for compatibility with tested devices and hard-coded runtime paths.
+1. Download and extract `PaperCast-v0.9.1.zip`.
+2. Copy the top-level `KindleDash/` extension directory to `/mnt/us/extensions/` on the Kindle.
+3. Confirm that the installed menu file is at `/mnt/us/extensions/KindleDash/menu.json` and the launcher is at `/mnt/us/extensions/KindleDash/bin/run.sh`.
+4. Safely disconnect the Kindle, open KUAL, and select **PaperCast**.
+5. Choose a direct preview action, **Start PaperCast — Hourly only**, or **Start PaperCast — Cycle all 3 views**.
 
-Public installation instructions and packaging cleanup are still in progress. Do not rename the installed extension directory unless the runtime paths are updated accordingly.
+The project and public release are named PaperCast, but the tested runtime directory is still named `KindleDash`. Do not rename that directory: current scripts contain `/mnt/us/extensions/KindleDash` runtime paths.
 
 ## Configuration
 
-The current development configuration is:
+Edit `/mnt/us/extensions/KindleDash/config.conf` before starting live mode. The currently supported manual settings are:
+
+| Setting | Purpose | Example |
+|---|---|---|
+| `LOCATION` | Label displayed on the dashboard | `Brussels` |
+| `LATITUDE` | Forecast latitude in decimal degrees | `50.87002` |
+| `LONGITUDE` | Forecast longitude in decimal degrees | `4.40824` |
+| `TIMEZONE` | IANA timezone used for API data and display times | `Europe/Brussels` |
+
+The checked-in development configuration uses the Evere coordinates below while retaining Brussels as the visible location label:
 
 ```conf
 LOCATION="Brussels"
@@ -81,9 +103,7 @@ LONGITUDE="4.40824"
 TIMEZONE="Europe/Brussels"
 ```
 
-These coordinates represent the Evere development location while the visible dashboard label remains Brussels.
-
-User-friendly city-only automatic location setup is planned. For now, changing location requires editing the configuration values directly.
+City-name-only automatic configuration is planned but is not implemented. A location change currently requires manually updating all applicable values.
 
 ## Weather data
 
