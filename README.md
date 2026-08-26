@@ -1,33 +1,33 @@
 # PaperCast
 
-**Turn an old jailbroken Kindle Paperwhite into a low-power e-ink weather dashboard.**
+Turn an old jailbroken Kindle Paperwhite into a low-power e-ink weather dashboard.
 
 ![PaperCast](assets/papercast-hero.png)
 
-PaperCast repurposes an old Kindle Paperwhite as a dedicated always-on weather display. It fetches weather data, renders a clean e-ink dashboard, then puts the Kindle back to sleep until the next scheduled refresh.
+PaperCast repurposes an old Kindle Paperwhite as a dedicated weather display. It fetches weather data, renders a clean portrait dashboard directly to the e-ink screen, then puts the Kindle back into deep sleep until the next scheduled refresh.
 
-The current build has been developed and tested on real Kindle Paperwhite 1 hardware.
-
-## What it shows
-
-PaperCast currently displays:
+## Current features
 
 - Current temperature and weather conditions
 - Feels-like temperature
-- Current precipitation probability
+- Precipitation probability
+- Precipitation amount in millimetres
 - Daily high and low
 - Sunrise and sunset
-- Four-hour forecast
-- Hourly precipitation probability
-- Weather icons using Meteocons
+- Next-hours forecast
+- Daypart forecast
+- Multi-day forecast
+- Cycling forecast views
+- Direct previews for the Hourly, Dayparts, Daily, and all-views screens
+- Meteocons monochrome weather icons
 - Battery level
-- Last refresh time
-- Additional cycling forecast views
+- Last-refreshed time
 - Automatic hourly refresh
+- Deep sleep between updates
 
 ## Real-device preview
 
-This is PaperCast running on the actual Kindle Paperwhite 1 used during development:
+This is PaperCast running on the Kindle Paperwhite 1 used during development:
 
 ![PaperCast running on a Kindle Paperwhite 1](assets/papercast-real-device.jpg)
 
@@ -35,54 +35,44 @@ The interface is designed specifically for e-ink rather than adapted from a phon
 
 ## How it works
 
-PaperCast uses:
+PaperCast uses Open-Meteo weather data with the DWD ICON Seamless forecast model. FBInk renders the dashboard directly to the Kindle framebuffer, while RTC wake alarms provide the hourly update schedule.
 
-- **Open-Meteo** for weather data
-- **DWD ICON** as the currently selected forecast model
-- **FBInk** for direct framebuffer rendering
-- **KUAL** to launch PaperCast on a jailbroken Kindle
-- RTC wake alarms to wake the Kindle for scheduled refreshes
+A normal update cycle is:
 
-A typical cycle is:
-
-1. Wake the Kindle
+1. Wake the Kindle using its RTC alarm
 2. Allow Wi-Fi to reconnect
-3. Fetch current weather and forecast data
-4. Render the dashboard
-5. Suspend again until the next refresh
+3. Fetch current conditions and forecast data
+4. Render the selected forecast view
+5. Suspend until the next hourly refresh
 
-Because an e-ink screen requires essentially no power to keep a static image visible, an old Kindle is unusually well suited to this job.
+Because an e-ink display requires essentially no power to retain a static image, an old Kindle is unusually well suited to this job.
 
-## Current status
+## Tested hardware
 
-PaperCast is currently a **beta / pre-v1 release**.
-
-Current known-good build: **beta76**
-
-Tested on:
+The v0.9.0 public beta has been physically tested with:
 
 - Kindle Paperwhite 1
 - Firmware 5.6.1.1
 - KUAL
 - FBInk
 - Wi-Fi weather updates
-- Hourly RTC suspend / wake cycles
+- Hourly RTC suspend/wake cycles
 
-Other Kindle models have not yet been validated.
+## Current status
+
+PaperCast is a public beta release. The current known-good build is **v0.9.0**.
+
+It includes Hourly, Dayparts, and four-day forecast views. Precipitation probability and precipitation amount are shown in the current conditions and forecast views where corresponding Open-Meteo data is available.
 
 ## Installation
 
-Public installation instructions are being prepared.
+PaperCast currently requires a jailbroken Kindle with KUAL installed. The extension uses the existing `KindleDash/` runtime directory name for compatibility with tested devices and hard-coded runtime paths.
 
-PaperCast currently requires a jailbroken Kindle with KUAL installed.
-
-The runtime extension is installed under the Kindle extensions directory and launched from KUAL.
-
-A packaged public release with step-by-step installation instructions will be provided before v1.0.
+Public installation instructions and packaging cleanup are still in progress. Do not rename the installed extension directory unless the runtime paths are updated accordingly.
 
 ## Configuration
 
-The current development build uses configurable values for:
+The current development configuration is:
 
 ```conf
 LOCATION="Brussels"
@@ -91,62 +81,51 @@ LONGITUDE="4.40824"
 TIMEZONE="Europe/Brussels"
 ```
 
-For the public release, configuration will be simplified so users can set their own location without editing project code.
+These coordinates represent the Evere development location while the visible dashboard label remains Brussels.
 
-City-name-only automatic location lookup is planned.
+User-friendly city-only automatic location setup is planned. For now, changing location requires editing the configuration values directly.
 
 ## Weather data
 
-PaperCast currently uses Open-Meteo with the DWD ICON model for current and forecast weather data.
+PaperCast uses:
 
-The displayed current temperature is model-derived weather data, not a measurement from a physical sensor attached to the Kindle.
+- Open-Meteo for weather data and forecast delivery
+- DWD ICON Seamless as the selected forecast model
 
-Forecast-model conditions can therefore differ from local weather stations or other weather services, particularly during rapidly changing conditions.
+The displayed current temperature and conditions are model-derived weather data. They are not measurements from a physical sensor attached to the Kindle, so they can differ from nearby weather stations or other services—especially during rapidly changing conditions.
 
-## Battery use
+## Current limitations
 
-PaperCast is designed around deep sleep rather than leaving the Kindle awake continuously.
+- Currently optimized and tested only on Kindle Paperwhite 1
+- Portrait orientation only
+- Clean exit back to the standard Kindle interface is still planned
+- User-friendly city-only configuration is still planned
+- Current conditions are model-derived rather than measured by a local physical sensor
+- Other Kindle models have not yet been validated
 
-The current build:
+## Roadmap
 
-- Refreshes once per hour
-- Wakes Wi-Fi only when needed
-- Redraws the e-ink screen
-- Suspends again between updates
-
-Real-world battery-life testing is still ongoing.
-
-## Roadmap to v1.0
-
-Planned work before the first stable release includes:
-
-- Clean exit back to the normal Kindle interface without rebooting
-- Easier location setup
-- Runtime/project naming cleanup from legacy `KindleDash` references
+- Clean exit back to the standard Kindle interface
+- City-only automatic location setup
 - Landscape mode
-- Installation documentation
-- Additional real-device testing
-- Licensing and attribution cleanup
-- Testing on more Kindle models
+- Additional Kindle model testing
+- Public installation cleanup
 
 ## Project philosophy
 
-PaperCast is deliberately simple: reuse hardware that would otherwise sit in a drawer and turn it into a quiet, low-power information display.
+PaperCast is deliberately simple: reuse hardware that might otherwise sit in a drawer and turn it into a quiet, low-power information display.
 
-No browser. No glowing LCD. No constant animation. No account required just to discover whether it might rain.
+No browser. No glowing LCD. No constant animation. Just weather on e-ink.
 
-Just weather on e-ink.
+## Credits and attribution
 
-## Credits
+PaperCast builds on excellent open-source projects and public weather services:
 
-PaperCast builds on excellent open-source work and public weather services, including:
-
-- [Open-Meteo](https://open-meteo.com/)
-- [FBInk](https://github.com/NiLuJe/FBInk)
-- [Meteocons](https://github.com/basmilius/weather-icons)
-
-Additional licensing and bundled-component attribution will be finalized before the public v1.0 release.
+- [Open-Meteo](https://open-meteo.com/) — weather API and forecast delivery
+- [DWD ICON](https://www.dwd.de/EN/ourservices/nwp_forecast_data/nwp_forecast_data.html) — forecast model
+- [FBInk](https://github.com/NiLuJe/FBInk) — Kindle framebuffer rendering
+- [Meteocons](https://github.com/basmilius/weather-icons) — monochrome weather icon source
 
 ## License
 
-Project license to be finalized before the public v1.0 release.
+A project license and final bundled-component attribution are still to be finalized before v1.0.

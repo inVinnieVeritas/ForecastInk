@@ -5,26 +5,38 @@
       "priority": 100,
       "items": [
         {
-          "name": "Preview hourly view (2 min)",
+          "name": "Preview Hourly",
           "priority": 1,
-          "action": "./bin/run.sh preview",
+          "action": "./bin/run.sh preview-hourly",
           "exitmenu": true
         },
         {
-          "name": "Preview all 3 views (20 sec each)",
+          "name": "Preview Dayparts",
           "priority": 2,
+          "action": "./bin/run.sh preview-dayparts",
+          "exitmenu": true
+        },
+        {
+          "name": "Preview Daily",
+          "priority": 3,
+          "action": "./bin/run.sh preview-daily",
+          "exitmenu": true
+        },
+        {
+          "name": "Preview all 3 views",
+          "priority": 4,
           "action": "./bin/run.sh preview-views",
           "exitmenu": true
         },
         {
           "name": "Start PaperCast — Hourly only",
-          "priority": 3,
+          "priority": 5,
           "action": "./bin/run.sh live-hourly",
           "exitmenu": true
         },
         {
           "name": "Start PaperCast — Cycle all 3 views",
-          "priority": 4,
+          "priority": 6,
           "action": "./bin/run.sh live",
           "exitmenu": true
         }

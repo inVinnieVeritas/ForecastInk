@@ -26,7 +26,7 @@ NBFONT="$(pick_font   /usr/java/lib/fonts/Futura_LT_75_Bold.ttf   /usr/java/lib/
 
 MODE="$1"
 case "$MODE" in
-  live|live-hourly|preview-views) ;;
+  live|live-hourly|preview|preview-hourly|preview-dayparts|preview-daily|preview-views) ;;
   *) MODE="preview" ;;
 esac
 VIEW_MODE=0
@@ -85,6 +85,50 @@ round_temp(){
   case "$V" in ''|--|*[!0-9.-]*) echo "$V";; *) awk -v v="$V" 'BEGIN { printf "%.0f", v }';; esac
 }
 
+format_precip(){
+  awk -v v="$1" 'BEGIN {
+    if (v !~ /^[0-9]+([.][0-9]+)?$/) v=0
+    printf "%.1f", v + 0
+  }'
+}
+
+format_percent(){
+  awk -v v="$1" 'BEGIN {
+    if (v !~ /^[0-9]+([.][0-9]+)?$/) v=0
+    printf "%.0f", v + 0
+  }'
+}
+
+daypart_precip_total(){
+  LABEL="$1"
+  DAY_OFFSET="$2"
+  case "$LABEL" in
+    MORNING)
+      START_ABS=$((DAY_OFFSET * 24 + 7)); END_ABS=$((DAY_OFFSET * 24 + 12)) ;;
+    AFTERNOON)
+      START_ABS=$((DAY_OFFSET * 24 + 13)); END_ABS=$((DAY_OFFSET * 24 + 18)) ;;
+    EVENING)
+      START_ABS=$((DAY_OFFSET * 24 + 19)); END_ABS=$((DAY_OFFSET * 24 + 22)) ;;
+    TONIGHT)
+      START_ABS=$((DAY_OFFSET * 24 + 23)); END_ABS=$(((DAY_OFFSET + 1) * 24 + 6)) ;;
+    *)
+      echo "0.0"
+      return ;;
+  esac
+
+  TOTAL=0
+  A="$START_ABS"
+  while [ "$A" -le "$END_ABS" ]; do
+    V="$(nth_line /tmp/kd_hprecip "$((A + 1))")"
+    TOTAL="$(awk -v total="$TOTAL" -v value="$V" 'BEGIN {
+      if (value !~ /^[0-9]+([.][0-9]+)?$/) value=0
+      printf "%.4f", total + value
+    }')"
+    A=$((A + 1))
+  done
+  format_precip "$TOTAL"
+}
+
 weekday_short(){
   echo "$1" | awk -F- '{
     y=$1+0; m=$2+0; d=$3+0
@@ -118,6 +162,7 @@ set_forecast_slot(){
   eval ${PREFIX}_TEMP=\"$(round_temp "$V")\"
   eval ${PREFIX}_ICON=\"$(icon_name "$C" "$D")\"
   eval ${PREFIX}_RAIN="$R"
+  eval ${PREFIX}_PRECIP=\"$(daypart_precip_total "$LABEL" "$DAY_OFFSET")\"
 }
 
 build_daypart_slots(){
@@ -155,6 +200,8 @@ parse_weather(){
   echo "$DOBJ" | sed -n 's/.*"weather_code":\[\([^]]*\)\].*/\1/p' | tr ',' '\n' >/tmp/kd_dcodes
   echo "$DOBJ" | sed -n 's/.*"sunrise":\[\([^]]*\)\].*/\1/p' | tr ',' '\n' | tr -d '"' >/tmp/kd_sunrise
   echo "$DOBJ" | sed -n 's/.*"sunset":\[\([^]]*\)\].*/\1/p' | tr ',' '\n' | tr -d '"' >/tmp/kd_sunset
+  echo "$DOBJ" | sed -n 's/.*"precipitation_sum":\[\([^]]*\)\].*/\1/p' | tr ',' '\n' >/tmp/kd_dprecip
+  echo "$DOBJ" | sed -n 's/.*"precipitation_probability_max":\[\([^]]*\)\].*/\1/p' | tr ',' '\n' >/tmp/kd_drain
 
   HIGH="$(nth_line /tmp/kd_dmax 1)"
   LOW="$(nth_line /tmp/kd_dmin 1)"
@@ -166,6 +213,7 @@ parse_weather(){
   echo "$HOBJ" | sed -n 's/.*"weather_code":\[\([^]]*\)\].*/\1/p' | tr ',' '\n' >/tmp/kd_hcodes
   echo "$HOBJ" | sed -n 's/.*"is_day":\[\([^]]*\)\].*/\1/p' | tr ',' '\n' >/tmp/kd_hisday
   echo "$HOBJ" | sed -n 's/.*"precipitation_probability":\[\([^]]*\)\].*/\1/p' | tr ',' '\n' >/tmp/kd_hrain
+  echo "$HOBJ" | sed -n 's/.*"precipitation":\[\([^]]*\)\].*/\1/p' | tr ',' '\n' >/tmp/kd_hprecip
 
   [ -n "$TEMP" ] || TEMP="--"
   [ -n "$FEELS" ] || FEELS="$TEMP"
@@ -186,6 +234,8 @@ parse_weather(){
   BASE_INDEX=$((HNOW + 1))
   CURRENT_RAIN="$(nth_line /tmp/kd_hrain "$BASE_INDEX")"
   case "$CURRENT_RAIN" in ''|null|*[!0-9]*) CURRENT_RAIN=0 ;; esac
+  CURRENT_PRECIP="$(nth_line /tmp/kd_hprecip "$BASE_INDEX")"
+  CURRENT_PRECIP="$(format_precip "$CURRENT_PRECIP")"
 
   I=1
   while [ $I -le 4 ]; do
@@ -195,6 +245,7 @@ parse_weather(){
     V="$(nth_line /tmp/kd_htemps "$N")"
     D="$(nth_line /tmp/kd_hisday "$N")"
     R="$(nth_line /tmp/kd_hrain "$N")"
+    A="$(nth_line /tmp/kd_hprecip "$N")"
     case "$R" in ''|null|*[!0-9]*) R=0 ;; esac
     if [ -z "$D" ]; then
       HH="${T#*T}"
@@ -205,6 +256,7 @@ parse_weather(){
     eval H${I}_TEMP=\"$(round_temp "$V")\"
     eval H${I}_ICON=\"$(icon_name "$C" "$D")\"
     eval H${I}_RAIN=\"$R\"
+    eval H${I}_PRECIP=\"$(format_precip "$A")\"
     I=$((I + 1))
   done
 
@@ -217,9 +269,12 @@ parse_weather(){
     DH="$(nth_line /tmp/kd_dmax "$N")"
     DL="$(nth_line /tmp/kd_dmin "$N")"
     DC="$(nth_line /tmp/kd_dcodes "$N")"
+    DA="$(nth_line /tmp/kd_dprecip "$N")"
+    DR="$(nth_line /tmp/kd_drain "$N")"
     [ -n "$DH" ] || DH="--"
     [ -n "$DL" ] || DL="--"
     [ -n "$DC" ] || DC=3
+    DR="$(format_percent "$DR")"
     if [ -n "$DD" ]; then
       DLABEL="$(weekday_short "$DD")"
     else
@@ -229,6 +284,8 @@ parse_weather(){
     eval D${I}_HIGH=\"$(round_temp "$DH")\"
     eval D${I}_LOW=\"$(round_temp "$DL")\"
     eval D${I}_ICON=\"$(icon_name "$DC" 1)\"
+    eval D${I}_MM=\"$(format_precip "$DA")\"
+    eval D${I}_RAIN=\"$DR\"
     I=$((I + 1))
   done
 
@@ -241,7 +298,7 @@ parse_weather(){
 }
 
 fetch_weather(){
-  URL="https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current=temperature_2m,apparent_temperature,weather_code,is_day&hourly=temperature_2m,weather_code,is_day,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,weather_code,sunrise,sunset&timezone=Europe%2FBrussels&forecast_days=5&models=dwd_icon_seamless"
+  URL="https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current=temperature_2m,apparent_temperature,weather_code,is_day&hourly=temperature_2m,weather_code,is_day,precipitation_probability,precipitation&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_sum,precipitation_probability_max,sunrise,sunset&timezone=Europe%2FBrussels&precipitation_unit=mm&forecast_days=5&models=dwd_icon_seamless"
 
   rm -f "$TMP"
   log "fetch start"
@@ -268,6 +325,7 @@ fetch_weather(){
   FETCH_STATE=OFFLINE
   TEMP="--"; FEELS="--"; HIGH="--"; LOW="--"; CONDITION=Offline; ICON=cloudy
   CURRENT_RAIN=0
+  CURRENT_PRECIP="0.0"
   SUNRISE="--:--"; SUNSET="--:--"
   for I in 1 2 3 4; do
     eval H${I}_LABEL=\"--:--\"
@@ -276,12 +334,16 @@ fetch_weather(){
     eval P${I}_LABEL=\"---\"
     eval P${I}_TEMP=\"--\"
     eval H${I}_RAIN=\"0\"
+    eval H${I}_PRECIP=\"0.0\"
     eval P${I}_RAIN="0"
+    eval P${I}_PRECIP=\"0.0\"
     eval P${I}_ICON=\"cloudy\"
     eval D${I}_LABEL=\"---\"
     eval D${I}_HIGH=\"--\"
     eval D${I}_LOW=\"--\"
     eval D${I}_ICON=\"cloudy\"
+    eval D${I}_MM=\"0.0\"
+    eval D${I}_RAIN=\"0\"
   done
   return 1
 }
@@ -342,6 +404,17 @@ draw_digit_clock(){
 }
 
 
+forecast_icon_y_offset(){
+  case "$1" in
+    partly) echo 7 ;;
+    partly-night) echo 5 ;;
+    rain) echo -3 ;;
+    snow) echo -4 ;;
+    fog|thunder) echo -6 ;;
+    *) echo 0 ;;
+  esac
+}
+
 draw_hourly_panel(){
   # NEXT FOUR HOURS PANEL
   X1=18
@@ -356,12 +429,15 @@ draw_hourly_panel(){
     eval TMPV=\$H${I}_TEMP
     eval ICO=\$H${I}_ICON
     eval RAINV=\$H${I}_RAIN
+    eval PRECIPV=\$H${I}_PRECIP
+    ICON_Y=$((691 + $(forecast_icon_y_offset "$ICO")))
 
     draw_num_cell 32 640 350 "$X" "$COLW" BOLD "$LAB"
-    "$FBINK" -q -b -g file="$BASE/assets/weather/${ICO}.png",x="$((X + 29))",y=695,w=120,h=120,dither >/dev/null 2>&1
-    draw_num_cell 48 824 138 "$X" "$COLW" BOLD "${TMPV}°"
-    "$FBINK" -q -b -g file="$BASE/assets/ui/rain-probability.png",x="$((X + 18))",y=904,w=32,h=32,dither >/dev/null 2>&1
-    draw_num_cell 36 900 64 "$((X + 8))" "$((COLW - 8))" BOLD "${RAINV}%"
+    "$FBINK" -q -b -g file="$BASE/assets/weather/${ICO}.png",x="$((X + 29))",y="$ICON_Y",w=120,h=120,dither >/dev/null 2>&1
+    draw_num_cell 50 794 168 "$X" "$COLW" BOLD "${TMPV}°"
+    draw_cell 36 836 150 "$X" "$COLW" BOLD "${PRECIPV} mm"
+    "$FBINK" -q -b -g file="$BASE/assets/ui/rain-probability.png",x="$((X + 18))",y=902,w=32,h=32,dither >/dev/null 2>&1
+    draw_num_cell 36 898 76 "$((X + 8))" "$((COLW - 8))" BOLD "${RAINV}%"
   done
 }
 
@@ -379,12 +455,15 @@ draw_dayparts_panel(){
     eval TMPV=\$P${I}_TEMP
     eval ICO=\$P${I}_ICON
     eval RAINV=\$P${I}_RAIN
+    eval PRECIPV=\$P${I}_PRECIP
+    ICON_Y=$((691 + $(forecast_icon_y_offset "$ICO")))
 
     draw_cell 23 640 350 "$X" "$COLW" BOLD "$LAB"
-    "$FBINK" -q -b -g file="$BASE/assets/weather/${ICO}.png",x="$((X + 29))",y=695,w=120,h=120,dither >/dev/null 2>&1
-    draw_num_cell 48 824 138 "$X" "$COLW" BOLD "${TMPV}°"
-    "$FBINK" -q -b -g file="$BASE/assets/ui/rain-probability.png",x="$((X + 18))",y=904,w=32,h=32,dither >/dev/null 2>&1
-    draw_num_cell 36 900 64 "$((X + 8))" "$((COLW - 8))" BOLD "${RAINV}%"
+    "$FBINK" -q -b -g file="$BASE/assets/weather/${ICO}.png",x="$((X + 29))",y="$ICON_Y",w=120,h=120,dither >/dev/null 2>&1
+    draw_num_cell 50 794 168 "$X" "$COLW" BOLD "${TMPV}°"
+    draw_cell 36 836 150 "$X" "$COLW" BOLD "${PRECIPV} mm"
+    "$FBINK" -q -b -g file="$BASE/assets/ui/rain-probability.png",x="$((X + 18))",y=902,w=32,h=32,dither >/dev/null 2>&1
+    draw_num_cell 36 898 76 "$((X + 8))" "$((COLW - 8))" BOLD "${RAINV}%"
   done
 }
 
@@ -402,10 +481,16 @@ draw_daily_panel(){
     eval HIGHV=\$D${I}_HIGH
     eval LOWV=\$D${I}_LOW
     eval ICO=\$D${I}_ICON
+    ICON_Y=$((711 + $(forecast_icon_y_offset "$ICO")))
 
     draw_cell 32 640 350 "$X" "$COLW" BOLD "$LAB"
-    "$FBINK" -q -b -g file="$BASE/assets/weather/${ICO}.png",x="$((X + 29))",y=695,w=120,h=120,dither >/dev/null 2>&1
-    draw_num_cell 34 824 138 "$X" "$COLW" BOLD "${HIGHV}°/${LOWV}°"
+    "$FBINK" -q -b -g file="$BASE/assets/weather/${ICO}.png",x="$((X + 29))",y="$ICON_Y",w=120,h=120,dither >/dev/null 2>&1
+    eval MMV=\$D${I}_MM
+    eval RAINV=\$D${I}_RAIN
+    draw_num_cell 34 806 156 "$X" "$COLW" BOLD "${HIGHV}°/${LOWV}°"
+    draw_cell 36 868 118 "$X" "$COLW" BOLD "${MMV} mm"
+    "$FBINK" -q -b -g file="$BASE/assets/ui/rain-probability.png",x="$((X + 18))",y=912,w=32,h=32,dither >/dev/null 2>&1
+    draw_num_cell 36 908 78 "$((X + 8))" "$((COLW - 8))" BOLD "${RAINV}%"
   done
 }
 draw_dashboard(){
@@ -432,8 +517,10 @@ draw_dashboard(){
       ;;
   esac
 
+  STATION_BG="station-bg.png"
+  [ "$VIEW_MODE" = "2" ] && STATION_BG="station-bg-daily.png"
   "$FBINK" -q -b -k >/dev/null 2>&1
-  "$FBINK" -q -b -g file="$BASE/assets/ui/station-bg.png",x=0,y=0,w=758,h=1024 >/dev/null 2>&1
+  "$FBINK" -q -b -g file="$BASE/assets/ui/${STATION_BG}",x=0,y=0,w=758,h=1024 >/dev/null 2>&1
 
   # HEADER
   draw_text 40 8 957 10 290 BOLD "$TODAY"
@@ -451,6 +538,7 @@ draw_dashboard(){
   draw_text 44 420 405 360 165 BOLD "Feels ${FEELS}°C"
   "$FBINK" -q -b -g file="$BASE/assets/ui/rain-probability.png",x=598,y=432,w=28,h=28,dither >/dev/null 2>&1
   draw_text 44 420 405 628 28 BOLD "${CURRENT_RAIN}%"
+  draw_text 26 470 526 598 28 BOLD "${CURRENT_PRECIP} mm"
   draw_text 40 515 344 360 28 BOLD "High ${HIGH}°C / Low ${LOW}°C"
 
   "$FBINK" -q -b -g file="$BASE/assets/ui/sunrise.png",x=54,y=500,w=48,h=32,dither >/dev/null 2>&1
@@ -466,7 +554,7 @@ draw_dashboard(){
 
 
   # Footer: one compact line, pushed lower to give precipitation probability more room.
-  draw_text 28 952 14 170 170 BOLD "LAST REFRESHED  ${WEATHER_UPDATED}"
+  draw_text 28 976 14 170 170 BOLD "LAST REFRESHED  ${WEATHER_UPDATED}"
 
   "$FBINK" -q -f -s -W GC16 -w >/dev/null 2>&1
 }
@@ -514,14 +602,21 @@ if [ "$MODE" = "preview-views" ]; then
   /sbin/reboot
   exit 0
 fi
+case "$MODE" in
+  preview-dayparts) VIEW_MODE=1 ;;
+  preview-daily) VIEW_MODE=2 ;;
+  preview|preview-hourly) VIEW_MODE=0 ;;
+esac
 draw_dashboard
 
-if [ "$MODE" = "preview" ]; then
-  suspend_for "$PREVIEW_SECONDS"
-  sleep 3
-  /sbin/reboot
-  exit 0
-fi
+case "$MODE" in
+  preview|preview-hourly|preview-dayparts|preview-daily)
+    suspend_for "$PREVIEW_SECONDS"
+    sleep 3
+    /sbin/reboot
+    exit 0
+    ;;
+esac
 
 while true; do
   WAIT_SECS="$(seconds_until_next_hour)"
