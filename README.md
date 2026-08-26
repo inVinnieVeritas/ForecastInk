@@ -2,7 +2,7 @@
 
 Turn an old jailbroken Kindle Paperwhite into a low-power e-ink weather dashboard.
 
-![PaperCast running on a Kindle Paperwhite 1](assets/papercast-real-device.jpg)
+![PaperCast](assets/papercast-hero.png)
 
 PaperCast repurposes an old Kindle Paperwhite as a dedicated weather display. It fetches weather data, renders a clean portrait dashboard directly to the e-ink screen, then puts the Kindle back into deep sleep until the next scheduled refresh.
 
