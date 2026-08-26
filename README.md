@@ -121,11 +121,13 @@ No browser. No glowing LCD. No constant animation. Just weather on e-ink.
 
 PaperCast builds on excellent open-source projects and public weather services:
 
-- [Open-Meteo](https://open-meteo.com/) — weather API and forecast delivery
-- [DWD ICON](https://www.dwd.de/EN/ourservices/nwp_forecast_data/nwp_forecast_data.html) — forecast model
-- [FBInk](https://github.com/NiLuJe/FBInk) — Kindle framebuffer rendering
-- [Meteocons](https://github.com/basmilius/weather-icons) — monochrome weather icon source
+- [Open-Meteo](https://open-meteo.com/) — weather API and forecast delivery; API data are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+- [DWD ICON](https://www.dwd.de/EN/ourservices/nwp_forecast_data/nwp_forecast_data.html) — forecast model data produced by © Deutscher Wetterdienst
+- [FBInk](https://github.com/NiLuJe/FBInk) — Kindle framebuffer rendering, licensed GPL-3.0-or-later
+- [Meteocons](https://github.com/basmilius/meteocons) — monochrome weather icon source, licensed MIT
+
+Weather data by [Open-Meteo.com](https://open-meteo.com/) (CC BY 4.0), adapted for display by PaperCast. Forecast model data are based on DWD ICON Seamless, © Deutscher Wetterdienst.
 
 ## License
 
-A project license and final bundled-component attribution are still to be finalized before v1.0.
+PaperCast's original source code, documentation, and project-owned artwork are licensed under the [MIT License](LICENSE). Bundled third-party binaries and artwork retain their own licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for exact versions, source links, notices, and data-attribution requirements.
