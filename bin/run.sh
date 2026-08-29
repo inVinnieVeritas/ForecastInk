@@ -3,6 +3,8 @@ BASE="/mnt/us/extensions/KindleDash"; . "$BASE/config.conf"
 export LD_LIBRARY_PATH="$BASE/fbink/lib:${LD_LIBRARY_PATH}"
 FBINK="$BASE/fbink/bin/fbink"; XH="$BASE/bin/xh"
 CACHE="$BASE/cache/weather.json"; TMP="$BASE/cache/weather-latest.json"; LOG="$BASE/cache/kindledash.log"
+WEATHER_CACHE_LOCATION="$BASE/cache/weather.location"
+. "$BASE/bin/location.sh"
 # Prefer the Kindle's cleaner sans-serif faces for a dashboard UI.
 # The exact filenames vary across firmware, so probe safely and fall back to Caecilia.
 pick_font(){
@@ -297,31 +299,31 @@ parse_weather(){
   log "parsed temp=$TEMP feels=$FEELS high=$HIGH low=$LOW sunrise=$SUNRISE sunset=$SUNSET hours=$H1_LABEL,$H2_LABEL,$H3_LABEL,$H4_LABEL"
 }
 
-fetch_weather(){
-  URL="https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current=temperature_2m,apparent_temperature,weather_code,is_day&hourly=temperature_2m,weather_code,is_day,precipitation_probability,precipitation&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_sum,precipitation_probability_max,sunrise,sunset&timezone=Europe%2FBrussels&precipitation_unit=mm&forecast_days=5&models=dwd_icon_seamless"
+weather_location_key(){
+  printf '%s|%s|%s' "$LATITUDE" "$LONGITUDE" "$TIMEZONE"
+}
 
-  rm -f "$TMP"
-  log "fetch start"
-  "$XH" -d -q -o "$TMP" get "$URL" >>"$LOG" 2>&1
-  RC=$?
-  BYTES=0
-  [ -f "$TMP" ] && BYTES="$(wc -c <"$TMP")"
-  log "fetch rc=$RC bytes=$BYTES"
-
-  if [ $RC -eq 0 ] && [ -s "$TMP" ]; then
-    cp "$TMP" "$CACHE"
-    FETCH_STATE=LIVE
-    WEATHER_UPDATED="$(date '+%H:%M')"
-    parse_weather "$TMP"
-    return 0
+weather_cache_matches(){
+  [ -s "$CACHE" ] || return 1
+  if [ -f "$WEATHER_CACHE_LOCATION" ]; then
+    IFS= read -r CACHED_WEATHER_LOCATION <"$WEATHER_CACHE_LOCATION" || return 1
+    [ "$CACHED_WEATHER_LOCATION" = "$(weather_location_key)" ]
+    return
   fi
-  if [ -s "$CACHE" ]; then
-    FETCH_STATE=CACHED
-    [ -n "$WEATHER_UPDATED" ] || WEATHER_UPDATED="cached"
-    parse_weather "$CACHE"
-    return 1
-  fi
+  # Backward compatibility for an existing pre-location-feature cache when
+  # the user still has a complete explicit override.
+  [ "$LOCATION_SOURCE" = "explicit" ]
+}
 
+save_weather_cache(){
+  CACHE_KEY_NEW="${WEATHER_CACHE_LOCATION}.new"
+  cp "$TMP" "$CACHE" 2>/dev/null || return 1
+  weather_location_key >"$CACHE_KEY_NEW" 2>/dev/null || return 1
+  mv "$CACHE_KEY_NEW" "$WEATHER_CACHE_LOCATION" 2>/dev/null || return 1
+  return 0
+}
+
+set_offline_weather(){
   FETCH_STATE=OFFLINE
   TEMP="--"; FEELS="--"; HIGH="--"; LOW="--"; CONDITION=Offline; ICON=cloudy
   CURRENT_RAIN=0
@@ -345,6 +347,42 @@ fetch_weather(){
     eval D${I}_MM=\"0.0\"
     eval D${I}_RAIN=\"0\"
   done
+}
+fetch_weather(){
+  if ! resolve_location; then
+    log "weather fetch skipped: location unresolved for '$LOCATION'"
+    set_offline_weather
+    return 1
+  fi
+
+  TIMEZONE_URL="$(printf '%s' "$TIMEZONE" | sed 's/+/%2B/g; s|/|%2F|g')"
+  URL="https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current=temperature_2m,apparent_temperature,weather_code,is_day&hourly=temperature_2m,weather_code,is_day,precipitation_probability,precipitation&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_sum,precipitation_probability_max,sunrise,sunset&timezone=${TIMEZONE_URL}&precipitation_unit=mm&forecast_days=5&models=dwd_icon_seamless"
+
+  rm -f "$TMP"
+  log "fetch start"
+  "$XH" -d -q -o "$TMP" get "$URL" >>"$LOG" 2>&1
+  RC=$?
+  BYTES=0
+  [ -f "$TMP" ] && BYTES="$(wc -c <"$TMP")"
+  log "fetch rc=$RC bytes=$BYTES"
+
+  if [ $RC -eq 0 ] && [ -s "$TMP" ]; then
+    if ! save_weather_cache; then
+      log "weather cache write failed"
+    fi
+    FETCH_STATE=LIVE
+    WEATHER_UPDATED="$(date '+%H:%M')"
+    parse_weather "$TMP"
+    return 0
+  fi
+  if weather_cache_matches; then
+    FETCH_STATE=CACHED
+    [ -n "$WEATHER_UPDATED" ] || WEATHER_UPDATED="cached"
+    parse_weather "$CACHE"
+    return 1
+  fi
+  [ -s "$CACHE" ] && log "weather cache ignored: location does not match current coordinates/timezone"
+  set_offline_weather
   return 1
 }
 

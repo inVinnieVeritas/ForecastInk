@@ -85,16 +85,35 @@ The project and public release are named PaperCast, but the tested runtime direc
 
 ## Configuration
 
-Edit `/mnt/us/extensions/KindleDash/config.conf` before starting live mode. The currently supported manual settings are:
+Edit `/mnt/us/extensions/KindleDash/config.conf` before starting live mode. For normal setup, enter a city and leave the resolved fields blank:
 
-| Setting | Purpose | Example |
+```conf
+LOCATION="Bangkok"
+LATITUDE=""
+LONGITUDE=""
+TIMEZONE=""
+```
+
+On the next launch, PaperCast uses Open-Meteo's geocoding API to resolve the best matching latitude, longitude, and timezone. The successful result is cached on the Kindle, so normal hourly refreshes do not repeat the geocoding request. `LOCATION` remains the label shown on the dashboard.
+
+A simple city name uses Open-Meteo's highest-ranked result. For ambiguous names, include a region or country in `LOCATION`:
+
+```conf
+LOCATION="London, Ontario"
+# or LOCATION="Paris, Texas"
+# or LOCATION="Cambridge, UK"
+```
+
+The `, UK` suffix is sent to Open-Meteo as `, United Kingdom`; the original `LOCATION` text remains the dashboard label and cache key.
+
+| Setting | Purpose | Normal setup |
 |---|---|---|
-| `LOCATION` | Label displayed on the dashboard | `Brussels` |
-| `LATITUDE` | Forecast latitude in decimal degrees | `50.87002` |
-| `LONGITUDE` | Forecast longitude in decimal degrees | `4.40824` |
-| `TIMEZONE` | IANA timezone used for API data and display times | `Europe/Brussels` |
+| `LOCATION` | City query and dashboard label | Required, for example `Bangkok` |
+| `LATITUDE` | Exact forecast latitude | Leave blank for automatic setup |
+| `LONGITUDE` | Exact forecast longitude | Leave blank for automatic setup |
+| `TIMEZONE` | Exact IANA timezone | Leave blank for automatic setup |
 
-The checked-in development configuration uses the Evere coordinates below while retaining Brussels as the visible location label:
+For an exact point or maximum control, advanced users can bypass geocoding by supplying all three override values:
 
 ```conf
 LOCATION="Brussels"
@@ -103,7 +122,7 @@ LONGITUDE="4.40824"
 TIMEZONE="Europe/Brussels"
 ```
 
-City-name-only automatic configuration is planned but is not implemented. A location change currently requires manually updating all applicable values.
+Partial overrides are not mixed with geocoded values: either supply the complete latitude/longitude/timezone trio or leave all three blank. Changing `LOCATION` invalidates the previous location match and triggers one new lookup on the next launch.
 
 ## Weather data
 
@@ -119,14 +138,12 @@ The displayed current temperature and conditions are model-derived weather data.
 - Currently optimized and tested only on Kindle Paperwhite 1
 - Portrait orientation only
 - Clean exit back to the standard Kindle interface is still planned
-- User-friendly city-only configuration is still planned
 - Current conditions are model-derived rather than measured by a local physical sensor
 - Other Kindle models have not yet been validated
 
 ## Roadmap
 
 - Clean exit back to the standard Kindle interface
-- City-only automatic location setup
 - Landscape mode
 - Additional Kindle model testing
 - Public installation cleanup
