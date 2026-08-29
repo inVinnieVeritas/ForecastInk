@@ -49,7 +49,7 @@ Because an e-ink display requires essentially no power to retain a static image,
 
 ## Tested hardware
 
-The v0.9.1 public beta has been physically tested with:
+The v0.9.2 public beta has been physically tested with:
 
 - Kindle Paperwhite 1
 - Firmware 5.6.1.1
@@ -60,7 +60,7 @@ The v0.9.1 public beta has been physically tested with:
 
 ## Current status
 
-PaperCast is a public beta release. The current known-good build is **v0.9.1**.
+PaperCast is a public beta release. The current known-good build is **v0.9.2**.
 
 It includes Hourly, Dayparts, and four-day forecast views. Precipitation probability and precipitation amount are shown in the current conditions and forecast views where corresponding Open-Meteo data is available.
 
@@ -75,7 +75,7 @@ PaperCast may work on other jailbroken Kindle models or firmware versions, but t
 
 ## Installation
 
-1. Download and extract `PaperCast-v0.9.1.zip`.
+1. Download and extract `PaperCast-v0.9.2.zip`.
 2. Copy the top-level `KindleDash/` extension directory to `/mnt/us/extensions/` on the Kindle.
 3. Confirm that the installed menu file is at `/mnt/us/extensions/KindleDash/menu.json` and the launcher is at `/mnt/us/extensions/KindleDash/bin/run.sh`.
 4. Safely disconnect the Kindle, open KUAL, and select **PaperCast**.
