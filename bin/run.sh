@@ -1,10 +1,22 @@
 #!/bin/sh
+if [ "${PAPERCAST_RUNTIME_COPY:-0}" != "1" ]; then
+  PAPERCAST_RUNTIME_COPY_PATH="/tmp/papercast-run.$$"
+  cp -p "$0" "$PAPERCAST_RUNTIME_COPY_PATH" 2>/dev/null || exit 1
+  chmod 700 "$PAPERCAST_RUNTIME_COPY_PATH" 2>/dev/null || exit 1
+  PAPERCAST_RUNTIME_COPY=1
+  export PAPERCAST_RUNTIME_COPY PAPERCAST_RUNTIME_COPY_PATH
+  exec /bin/sh "$PAPERCAST_RUNTIME_COPY_PATH" "$@"
+fi
+
 BASE="/mnt/us/extensions/KindleDash"; . "$BASE/config.conf"
 export LD_LIBRARY_PATH="$BASE/fbink/lib:${LD_LIBRARY_PATH}"
 FBINK="$BASE/fbink/bin/fbink"; XH="$BASE/bin/xh"
 CACHE="$BASE/cache/weather.json"; TMP="$BASE/cache/weather-latest.json"; LOG="$BASE/cache/kindledash.log"
 WEATHER_CACHE_LOCATION="$BASE/cache/weather.location"
 . "$BASE/bin/location.sh"
+. "$BASE/bin/wake.sh"
+RESUME_LOG="/tmp/papercast-resume.log"
+WAKE_TOLERANCE_SECONDS=90
 # Prefer the Kindle's cleaner sans-serif faces for a dashboard UI.
 # The exact filenames vary across firmware, so probe safely and fall back to Caecilia.
 pick_font(){
@@ -38,6 +50,14 @@ mkdir -p "$BASE/cache"
 chmod +x "$XH" "$FBINK" >/dev/null 2>&1
 
 log(){ echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >>"$LOG"; }
+
+resume_log(){
+  RESUME_MESSAGE="$(date '+%Y-%m-%d %H:%M:%S') $*"
+  printf '%s\n' "$RESUME_MESSAGE" >>"$RESUME_LOG" 2>/dev/null || true
+  if [ "${PAPERCAST_STORAGE_AVAILABLE:-1}" = "1" ]; then
+    printf '%s\n' "$RESUME_MESSAGE" >>"$LOG" 2>/dev/null || true
+  fi
+}
 
 condition_text(){ case "$1" in
   0) echo Clear;; 1) echo "Mainly clear";; 2) echo "Partly cloudy";; 3) echo Overcast;;
@@ -603,14 +623,105 @@ rtc_path(){
   done
 }
 
-suspend_for(){
-  S="$1"; R="$(rtc_path)"
-  if [ -n "$R" ]; then
-    echo 0 >"$R" 2>/dev/null || true
-    echo "+$S" >"$R" 2>/dev/null || true
+usb_storage_active(){
+  USB_POWER_STATE=""
+  if [ -x /usr/bin/lipc-get-prop ]; then
+    USB_POWER_STATE="$(/usr/bin/lipc-get-prop -i com.lab126.powerd isCharging 2>/dev/null)"
   fi
+  case "$USB_POWER_STATE" in
+    1|true|yes) return 0 ;;
+  esac
+
+  for USB_LUN_PATH in \
+    /sys/devices/platform/fsl-usb2-udc/gadget/lun0/file \
+    /sys/class/android_usb/android0/f_mass_storage/lun0/file \
+    /sys/devices/virtual/android_usb/android0/f_mass_storage/lun0/file; do
+    [ -r "$USB_LUN_PATH" ] || continue
+    IFS= read -r USB_LUN_VALUE <"$USB_LUN_PATH" || USB_LUN_VALUE=""
+    [ -n "$USB_LUN_VALUE" ] && return 0
+  done
+  return 1
+}
+
+cancel_rtc_wake(){
+  RTC_CANCEL_RC=0
+  if [ -n "${RTC_WAKEALARM:-}" ] && [ -e "$RTC_WAKEALARM" ]; then
+    echo 0 >"$RTC_WAKEALARM" 2>/dev/null || RTC_CANCEL_RC=$?
+    return "$RTC_CANCEL_RC"
+  fi
+  for RTC_CANCEL_PATH in /sys/class/rtc/rtc1/wakealarm /sys/class/rtc/rtc0/wakealarm; do
+    [ -e "$RTC_CANCEL_PATH" ] || continue
+    echo 0 >"$RTC_CANCEL_PATH" 2>/dev/null || RTC_CANCEL_RC=$?
+  done
+  return "$RTC_CANCEL_RC"
+}
+
+CLEAN_EXIT_STATE="idle"
+clean_exit(){
+  [ "$CLEAN_EXIT_STATE" = "idle" ] || return 0
+  CLEAN_EXIT_STATE="running"
+  resume_log "clean exit starting"
+
+  if [ -x /usr/bin/lipc-set-prop ]; then
+    /usr/bin/lipc-set-prop com.lab126.powerd preventScreenSaver 1 >/dev/null 2>&1 || true
+  fi
+  cancel_rtc_wake
+
+  if [ -x /sbin/start ]; then
+    (cd / && /sbin/start lab126_gui) >/dev/null 2>&1 || true
+  elif [ -x /etc/init.d/framework ]; then
+    (cd / && /etc/init.d/framework start) >/dev/null 2>&1 || true
+  fi
+
+  sleep 2
+  if [ -x /usr/bin/lipc-set-prop ]; then
+    /usr/bin/lipc-set-prop com.lab126.pillow disableEnablePillow enable >/dev/null 2>&1 || true
+    if [ "${USB_STORAGE_ACTIVE:-0}" != "1" ] && usb_storage_active; then
+      USB_STORAGE_ACTIVE=1
+      PAPERCAST_STORAGE_AVAILABLE=0
+    fi
+    if [ "${USB_STORAGE_ACTIVE:-0}" != "1" ]; then
+      /usr/bin/lipc-set-prop com.lab126.appmgrd start app://com.lab126.booklet.home >/dev/null 2>&1 || true
+      sleep 1
+      /usr/bin/lipc-set-prop com.lab126.appmgrd start app://com.lab126.booklet.home >/dev/null 2>&1 || true
+    else
+      resume_log "USB storage active; Home request skipped"
+    fi
+  fi
+
+  [ -n "${PAPERCAST_RUNTIME_COPY_PATH:-}" ] && rm -f "$PAPERCAST_RUNTIME_COPY_PATH"
+  CLEAN_EXIT_STATE="done"
+  resume_log "clean exit complete"
+  if [ -x /usr/bin/lipc-set-prop ]; then
+    /usr/bin/lipc-set-prop com.lab126.powerd preventScreenSaver 0 >/dev/null 2>&1 || true
+  fi
+}
+
+suspend_for(){
+  S="$1"
+  SCHEDULE_EPOCH="$(date '+%s')"
+  EXPECTED_WAKE_EPOCH=$((SCHEDULE_EPOCH + S))
+  RTC_WAKEALARM="$(rtc_path)"
+  if [ -n "$RTC_WAKEALARM" ]; then
+    echo 0 >"$RTC_WAKEALARM" 2>/dev/null || true
+    echo "+$S" >"$RTC_WAKEALARM" 2>/dev/null || true
+  fi
+  resume_log "scheduled wake epoch=$EXPECTED_WAKE_EPOCH"
   sync
   echo mem >/sys/power/state
+
+  RESUME_EPOCH="$(date '+%s')"
+  RESUME_DELTA="$(resume_delta "$EXPECTED_WAKE_EPOCH" "$RESUME_EPOCH")"
+  RESUME_REASON="$(classify_resume "$EXPECTED_WAKE_EPOCH" "$RESUME_EPOCH" "$WAKE_TOLERANCE_SECONDS")"
+  USB_STORAGE_ACTIVE=0
+  PAPERCAST_STORAGE_AVAILABLE=1
+  if [ "$RESUME_REASON" = "external-early" ] && usb_storage_active; then
+    USB_STORAGE_ACTIVE=1
+    PAPERCAST_STORAGE_AVAILABLE=0
+  fi
+  resume_log "resume epoch=$RESUME_EPOCH"
+  resume_log "resume delta=$RESUME_DELTA"
+  resume_log "resume reason=$RESUME_REASON"
 }
 
 seconds_until_next_hour(){
@@ -622,12 +733,12 @@ seconds_until_next_hour(){
 }
 
 : >"$LOG"
+: >"$RESUME_LOG"
 log "beta.45 start mode=$MODE"
 log "fonts regular=$RFONT bold=$BFONT numeric_regular=$NRFONT numeric_bold=$NBFONT"
 fetch_weather
 
 lipc-set-prop com.lab126.powerd preventScreenSaver 1 >/dev/null 2>&1
-/sbin/stop framework >/dev/null 2>&1 || true
 /sbin/stop lab126_gui >/dev/null 2>&1 || true
 sleep 2
 
@@ -660,6 +771,10 @@ while true; do
   WAIT_SECS="$(seconds_until_next_hour)"
   log "next aligned refresh in ${WAIT_SECS}s"
   suspend_for "$WAIT_SECS"
+  if [ "$RESUME_REASON" = "external-early" ]; then
+    clean_exit
+    exit 0
+  fi
   # Give Wi-Fi a few seconds after RTC wake, then fetch current data.
   sleep 12
   if fetch_weather; then
