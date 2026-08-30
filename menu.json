@@ -39,6 +39,12 @@
           "priority": 6,
           "action": "./bin/run.sh live",
           "exitmenu": true
+        },
+        {
+          "name": "RECOVERY — Restore Kindle UI",
+          "priority": 7,
+          "action": "/bin/sh ./bin/restore-kindle-ui.sh",
+          "exitmenu": true
         }
       ]
     }

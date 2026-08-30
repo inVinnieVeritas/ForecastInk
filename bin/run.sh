@@ -5,6 +5,15 @@ if [ "${PAPERCAST_RUNTIME_COPY:-0}" != "1" ]; then
   chmod 700 "$PAPERCAST_RUNTIME_COPY_PATH" 2>/dev/null || exit 1
   PAPERCAST_RUNTIME_COPY=1
   export PAPERCAST_RUNTIME_COPY PAPERCAST_RUNTIME_COPY_PATH
+  case "${1:-}" in
+    live|live-hourly)
+      (
+        trap '' HUP
+        exec /bin/sh "$PAPERCAST_RUNTIME_COPY_PATH" "$@"
+      ) </dev/null >/dev/null 2>&1 &
+      exit 0
+      ;;
+  esac
   exec /bin/sh "$PAPERCAST_RUNTIME_COPY_PATH" "$@"
 fi
 
@@ -17,6 +26,8 @@ WEATHER_CACHE_LOCATION="$BASE/cache/weather.location"
 . "$BASE/bin/wake.sh"
 RESUME_LOG="/tmp/papercast-resume.log"
 WAKE_TOLERANCE_SECONDS=90
+PAPERCAST_PID_FILE="/tmp/papercast.pid"
+PAPERCAST_RTC_FILE="/tmp/papercast-rtc-path"
 # Prefer the Kindle's cleaner sans-serif faces for a dashboard UI.
 # The exact filenames vary across firmware, so probe safely and fall back to Caecilia.
 pick_font(){
@@ -57,6 +68,30 @@ resume_log(){
   if [ "${PAPERCAST_STORAGE_AVAILABLE:-1}" = "1" ]; then
     printf '%s\n' "$RESUME_MESSAGE" >>"$LOG" 2>/dev/null || true
   fi
+}
+
+pillow_hide(){
+  PILLOW_RC=127
+  if [ -x /usr/bin/lipc-set-prop ]; then
+    /usr/bin/lipc-set-prop com.lab126.pillow interrogatePillow \
+      '{"pillowId": "default_status_bar", "function": "nativeBridge.hideMe();"}' \
+      >/dev/null 2>&1
+    PILLOW_RC=$?
+  fi
+  [ "$PILLOW_RC" -eq 0 ] || resume_log "pillow hide failed rc=$PILLOW_RC"
+  return "$PILLOW_RC"
+}
+
+pillow_show(){
+  PILLOW_RC=127
+  if [ -x /usr/bin/lipc-set-prop ]; then
+    /usr/bin/lipc-set-prop com.lab126.pillow interrogatePillow \
+      '{"pillowId": "default_status_bar", "function": "nativeBridge.showMe();"}' \
+      >/dev/null 2>&1
+    PILLOW_RC=$?
+  fi
+  [ "$PILLOW_RC" -eq 0 ] || resume_log "pillow show failed rc=$PILLOW_RC"
+  return "$PILLOW_RC"
 }
 
 condition_text(){ case "$1" in
@@ -647,12 +682,14 @@ cancel_rtc_wake(){
   RTC_CANCEL_RC=0
   if [ -n "${RTC_WAKEALARM:-}" ] && [ -e "$RTC_WAKEALARM" ]; then
     echo 0 >"$RTC_WAKEALARM" 2>/dev/null || RTC_CANCEL_RC=$?
+    rm -f "$PAPERCAST_RTC_FILE" 2>/dev/null || true
     return "$RTC_CANCEL_RC"
   fi
   for RTC_CANCEL_PATH in /sys/class/rtc/rtc1/wakealarm /sys/class/rtc/rtc0/wakealarm; do
     [ -e "$RTC_CANCEL_PATH" ] || continue
     echo 0 >"$RTC_CANCEL_PATH" 2>/dev/null || RTC_CANCEL_RC=$?
   done
+  rm -f "$PAPERCAST_RTC_FILE" 2>/dev/null || true
   return "$RTC_CANCEL_RC"
 }
 
@@ -666,29 +703,23 @@ clean_exit(){
     /usr/bin/lipc-set-prop com.lab126.powerd preventScreenSaver 1 >/dev/null 2>&1 || true
   fi
   cancel_rtc_wake
+  pillow_show || true
 
-  if [ -x /sbin/start ]; then
-    (cd / && /sbin/start lab126_gui) >/dev/null 2>&1 || true
-  elif [ -x /etc/init.d/framework ]; then
-    (cd / && /etc/init.d/framework start) >/dev/null 2>&1 || true
-  fi
-
-  sleep 2
   if [ -x /usr/bin/lipc-set-prop ]; then
-    /usr/bin/lipc-set-prop com.lab126.pillow disableEnablePillow enable >/dev/null 2>&1 || true
     if [ "${USB_STORAGE_ACTIVE:-0}" != "1" ] && usb_storage_active; then
       USB_STORAGE_ACTIVE=1
       PAPERCAST_STORAGE_AVAILABLE=0
     fi
     if [ "${USB_STORAGE_ACTIVE:-0}" != "1" ]; then
-      /usr/bin/lipc-set-prop com.lab126.appmgrd start app://com.lab126.booklet.home >/dev/null 2>&1 || true
-      sleep 1
-      /usr/bin/lipc-set-prop com.lab126.appmgrd start app://com.lab126.booklet.home >/dev/null 2>&1 || true
+      /usr/bin/lipc-set-prop com.lab126.appmgrd start app://com.lab126.booklet.home >/dev/null 2>&1
+      HOME_REQUEST_RC=$?
+      [ "$HOME_REQUEST_RC" -eq 0 ] || resume_log "Home request failed rc=$HOME_REQUEST_RC"
     else
       resume_log "USB storage active; Home request skipped"
     fi
   fi
 
+  rm -f "$PAPERCAST_PID_FILE" 2>/dev/null || true
   [ -n "${PAPERCAST_RUNTIME_COPY_PATH:-}" ] && rm -f "$PAPERCAST_RUNTIME_COPY_PATH"
   CLEAN_EXIT_STATE="done"
   resume_log "clean exit complete"
@@ -705,6 +736,9 @@ suspend_for(){
   if [ -n "$RTC_WAKEALARM" ]; then
     echo 0 >"$RTC_WAKEALARM" 2>/dev/null || true
     echo "+$S" >"$RTC_WAKEALARM" 2>/dev/null || true
+    printf '%s\n' "$RTC_WAKEALARM" >"$PAPERCAST_RTC_FILE" 2>/dev/null || true
+  else
+    rm -f "$PAPERCAST_RTC_FILE" 2>/dev/null || true
   fi
   resume_log "scheduled wake epoch=$EXPECTED_WAKE_EPOCH"
   sync
@@ -736,11 +770,27 @@ seconds_until_next_hour(){
 : >"$RESUME_LOG"
 log "beta.45 start mode=$MODE"
 log "fonts regular=$RFONT bold=$BFONT numeric_regular=$NRFONT numeric_bold=$NBFONT"
-fetch_weather
-
-lipc-set-prop com.lab126.powerd preventScreenSaver 1 >/dev/null 2>&1
-/sbin/stop lab126_gui >/dev/null 2>&1 || true
-sleep 2
+case "$MODE" in
+  live|live-hourly)
+    printf '%s\n' "$$" >"$PAPERCAST_PID_FILE" 2>/dev/null || true
+    trap 'clean_exit; exit 0' INT TERM
+    trap 'clean_exit' 0
+    /usr/bin/lipc-set-prop com.lab126.powerd preventScreenSaver 1 >/dev/null 2>&1 || true
+    fetch_weather
+    if ! pillow_hide; then
+      clean_exit
+      exit 1
+    fi
+    # Match the validated KUAL/window-manager settling interval.
+    sleep 3
+    ;;
+  *)
+    fetch_weather
+    lipc-set-prop com.lab126.powerd preventScreenSaver 1 >/dev/null 2>&1
+    /sbin/stop lab126_gui >/dev/null 2>&1 || true
+    sleep 2
+    ;;
+esac
 
 if [ "$MODE" = "preview-views" ]; then
   for VIEW_MODE in 0 1 2; do
