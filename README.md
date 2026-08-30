@@ -24,6 +24,9 @@ PaperCast repurposes an old Kindle Paperwhite as a dedicated weather display. It
 - Last-refreshed time
 - Automatic hourly refresh
 - Deep sleep between updates
+- Fast exit to Kindle Home with a short power-button press
+- Native USB wake and safe-eject recovery
+- KUAL recovery action for restoring the Kindle UI
 
 ## Real-device preview
 
@@ -49,7 +52,7 @@ Because an e-ink display requires essentially no power to retain a static image,
 
 ## Tested hardware
 
-The v0.9.2 public beta has been physically tested with:
+The v0.9.3 public beta has been physically tested with:
 
 - Kindle Paperwhite 1
 - Firmware 5.6.1.1
@@ -57,12 +60,16 @@ The v0.9.2 public beta has been physically tested with:
 - FBInk
 - Wi-Fi weather updates
 - Hourly RTC suspend/wake cycles
+- Short power-button exit to Kindle Home
+- USB wake, Windows storage access, and safe eject
 
 ## Current status
 
-PaperCast is a public beta release. The current known-good build is **v0.9.2**.
+PaperCast is a public beta release. The current known-good build is **v0.9.3**.
 
 It includes Hourly, Dayparts, and four-day forecast views. Precipitation probability and precipitation amount are shown in the current conditions and forecast views where corresponding Open-Meteo data is available.
+
+Live mode can return to Kindle Home in a few seconds after a short power-button press. USB wake keeps storage available to the connected computer, and safe eject returns directly to the normal Kindle interface without a reboot or long power-button reset. Restoring only the Kindle's Pillow UI layer avoids the tree/logo/progress startup sequence seen when the full UI stack is restarted.
 
 ## Requirements
 
@@ -75,13 +82,19 @@ PaperCast may work on other jailbroken Kindle models or firmware versions, but t
 
 ## Installation
 
-1. Download and extract `PaperCast-v0.9.2.zip`.
+1. Download and extract `PaperCast-v0.9.3.zip`.
 2. Copy the top-level `KindleDash/` extension directory to `/mnt/us/extensions/` on the Kindle.
 3. Confirm that the installed menu file is at `/mnt/us/extensions/KindleDash/menu.json` and the launcher is at `/mnt/us/extensions/KindleDash/bin/run.sh`.
 4. Safely disconnect the Kindle, open KUAL, and select **PaperCast**.
 5. Choose a direct preview action, **Start PaperCast — Hourly only**, or **Start PaperCast — Cycle all 3 views**.
 
 The project and public release are named PaperCast, but the tested runtime directory is still named `KindleDash`. Do not rename that directory: current scripts contain `/mnt/us/extensions/KindleDash` runtime paths.
+
+## Exiting PaperCast
+
+While PaperCast is suspended, press the power button briefly to return to Kindle Home. On the tested PW1 this takes approximately one to three seconds and does not show the tree/logo/progress sequence.
+
+Connecting USB while PaperCast is suspended also exits live mode while leaving normal Kindle USB storage handling intact. After safely ejecting the drive, the Kindle returns to its normal Home/library interface. If the interface ever needs manual restoration, use **RECOVERY — Restore Kindle UI** from the PaperCast KUAL menu.
 
 ## Configuration
 
@@ -137,13 +150,11 @@ The displayed current temperature and conditions are model-derived weather data.
 
 - Currently optimized and tested only on Kindle Paperwhite 1
 - Portrait orientation only
-- Clean exit back to the standard Kindle interface is still planned
 - Current conditions are model-derived rather than measured by a local physical sensor
 - Other Kindle models have not yet been validated
 
 ## Roadmap
 
-- Clean exit back to the standard Kindle interface
 - Landscape mode
 - Additional Kindle model testing
 - Public installation cleanup
