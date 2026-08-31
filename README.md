@@ -30,9 +30,27 @@ PaperCast repurposes an old Kindle Paperwhite as a dedicated weather display. It
 
 ## Real-device preview
 
-This is PaperCast running on the Kindle Paperwhite 1 used during development:
+PaperCast can cycle hourly between three forecast views:
 
-![PaperCast running on a Kindle Paperwhite 1](assets/papercast-real-device.jpg)
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <img src="assets/papercast-hourly.jpg" alt="PaperCast Hourly view on a Kindle Paperwhite 1"><br>
+      <strong>Hourly</strong><br>
+      <sub>Upcoming individual hours</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="assets/papercast-dayparts.jpg" alt="PaperCast Dayparts view on a Kindle Paperwhite 1"><br>
+      <strong>Dayparts</strong><br>
+      <sub>Four broader periods of the day</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="assets/papercast-daily.jpg" alt="PaperCast Daily view on a Kindle Paperwhite 1"><br>
+      <strong>Daily</strong><br>
+      <sub>Multi-day forecast</sub>
+    </td>
+  </tr>
+</table>
 
 The interface is designed specifically for e-ink rather than adapted from a phone or desktop weather app. The Kindle spends most of its time suspended and wakes only when it needs to update.
 
