@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Automatic location resolution for PaperCast.
+# Automatic location resolution for ForecastInk.
 # Expects BASE, XH, LOCATION, LATITUDE, LONGITUDE and TIMEZONE from run.sh.
 
 GEOCODE_CACHE="$BASE/cache/location.json"

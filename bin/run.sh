@@ -1,33 +1,33 @@
 #!/bin/sh
-if [ "${PAPERCAST_RUNTIME_COPY:-0}" != "1" ]; then
-  PAPERCAST_RUNTIME_COPY_PATH="/tmp/papercast-run.$$"
-  cp -p "$0" "$PAPERCAST_RUNTIME_COPY_PATH" 2>/dev/null || exit 1
-  chmod 700 "$PAPERCAST_RUNTIME_COPY_PATH" 2>/dev/null || exit 1
-  PAPERCAST_RUNTIME_COPY=1
-  export PAPERCAST_RUNTIME_COPY PAPERCAST_RUNTIME_COPY_PATH
+if [ "${FORECASTINK_RUNTIME_COPY:-0}" != "1" ]; then
+  FORECASTINK_RUNTIME_COPY_PATH="/tmp/forecastink-run.$$"
+  cp -p "$0" "$FORECASTINK_RUNTIME_COPY_PATH" 2>/dev/null || exit 1
+  chmod 700 "$FORECASTINK_RUNTIME_COPY_PATH" 2>/dev/null || exit 1
+  FORECASTINK_RUNTIME_COPY=1
+  export FORECASTINK_RUNTIME_COPY FORECASTINK_RUNTIME_COPY_PATH
   case "${1:-}" in
     live|live-hourly)
       (
         trap '' HUP
-        exec /bin/sh "$PAPERCAST_RUNTIME_COPY_PATH" "$@"
+        exec /bin/sh "$FORECASTINK_RUNTIME_COPY_PATH" "$@"
       ) </dev/null >/dev/null 2>&1 &
       exit 0
       ;;
   esac
-  exec /bin/sh "$PAPERCAST_RUNTIME_COPY_PATH" "$@"
+  exec /bin/sh "$FORECASTINK_RUNTIME_COPY_PATH" "$@"
 fi
 
-BASE="/mnt/us/extensions/KindleDash"; . "$BASE/config.conf"
+BASE="/mnt/us/extensions/ForecastInk"; . "$BASE/config.conf"
 export LD_LIBRARY_PATH="$BASE/fbink/lib:${LD_LIBRARY_PATH}"
 FBINK="$BASE/fbink/bin/fbink"; XH="$BASE/bin/xh"
-CACHE="$BASE/cache/weather.json"; TMP="$BASE/cache/weather-latest.json"; LOG="$BASE/cache/kindledash.log"
+CACHE="$BASE/cache/weather.json"; TMP="$BASE/cache/weather-latest.json"; LOG="$BASE/cache/forecastink.log"
 WEATHER_CACHE_LOCATION="$BASE/cache/weather.location"
 . "$BASE/bin/location.sh"
 . "$BASE/bin/wake.sh"
-RESUME_LOG="/tmp/papercast-resume.log"
+RESUME_LOG="/tmp/forecastink-resume.log"
 WAKE_TOLERANCE_SECONDS=90
-PAPERCAST_PID_FILE="/tmp/papercast.pid"
-PAPERCAST_RTC_FILE="/tmp/papercast-rtc-path"
+FORECASTINK_PID_FILE="/tmp/forecastink.pid"
+FORECASTINK_RTC_FILE="/tmp/forecastink-rtc-path"
 # Prefer the Kindle's cleaner sans-serif faces for a dashboard UI.
 # The exact filenames vary across firmware, so probe safely and fall back to Caecilia.
 pick_font(){
@@ -65,7 +65,7 @@ log(){ echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >>"$LOG"; }
 resume_log(){
   RESUME_MESSAGE="$(date '+%Y-%m-%d %H:%M:%S') $*"
   printf '%s\n' "$RESUME_MESSAGE" >>"$RESUME_LOG" 2>/dev/null || true
-  if [ "${PAPERCAST_STORAGE_AVAILABLE:-1}" = "1" ]; then
+  if [ "${FORECASTINK_STORAGE_AVAILABLE:-1}" = "1" ]; then
     printf '%s\n' "$RESUME_MESSAGE" >>"$LOG" 2>/dev/null || true
   fi
 }
@@ -682,14 +682,14 @@ cancel_rtc_wake(){
   RTC_CANCEL_RC=0
   if [ -n "${RTC_WAKEALARM:-}" ] && [ -e "$RTC_WAKEALARM" ]; then
     echo 0 >"$RTC_WAKEALARM" 2>/dev/null || RTC_CANCEL_RC=$?
-    rm -f "$PAPERCAST_RTC_FILE" 2>/dev/null || true
+    rm -f "$FORECASTINK_RTC_FILE" 2>/dev/null || true
     return "$RTC_CANCEL_RC"
   fi
   for RTC_CANCEL_PATH in /sys/class/rtc/rtc1/wakealarm /sys/class/rtc/rtc0/wakealarm; do
     [ -e "$RTC_CANCEL_PATH" ] || continue
     echo 0 >"$RTC_CANCEL_PATH" 2>/dev/null || RTC_CANCEL_RC=$?
   done
-  rm -f "$PAPERCAST_RTC_FILE" 2>/dev/null || true
+  rm -f "$FORECASTINK_RTC_FILE" 2>/dev/null || true
   return "$RTC_CANCEL_RC"
 }
 
@@ -708,7 +708,7 @@ clean_exit(){
   if [ -x /usr/bin/lipc-set-prop ]; then
     if [ "${USB_STORAGE_ACTIVE:-0}" != "1" ] && usb_storage_active; then
       USB_STORAGE_ACTIVE=1
-      PAPERCAST_STORAGE_AVAILABLE=0
+      FORECASTINK_STORAGE_AVAILABLE=0
     fi
     if [ "${USB_STORAGE_ACTIVE:-0}" != "1" ]; then
       /usr/bin/lipc-set-prop com.lab126.appmgrd start app://com.lab126.booklet.home >/dev/null 2>&1
@@ -719,8 +719,8 @@ clean_exit(){
     fi
   fi
 
-  rm -f "$PAPERCAST_PID_FILE" 2>/dev/null || true
-  [ -n "${PAPERCAST_RUNTIME_COPY_PATH:-}" ] && rm -f "$PAPERCAST_RUNTIME_COPY_PATH"
+  rm -f "$FORECASTINK_PID_FILE" 2>/dev/null || true
+  [ -n "${FORECASTINK_RUNTIME_COPY_PATH:-}" ] && rm -f "$FORECASTINK_RUNTIME_COPY_PATH"
   CLEAN_EXIT_STATE="done"
   resume_log "clean exit complete"
   if [ -x /usr/bin/lipc-set-prop ]; then
@@ -736,9 +736,9 @@ suspend_for(){
   if [ -n "$RTC_WAKEALARM" ]; then
     echo 0 >"$RTC_WAKEALARM" 2>/dev/null || true
     echo "+$S" >"$RTC_WAKEALARM" 2>/dev/null || true
-    printf '%s\n' "$RTC_WAKEALARM" >"$PAPERCAST_RTC_FILE" 2>/dev/null || true
+    printf '%s\n' "$RTC_WAKEALARM" >"$FORECASTINK_RTC_FILE" 2>/dev/null || true
   else
-    rm -f "$PAPERCAST_RTC_FILE" 2>/dev/null || true
+    rm -f "$FORECASTINK_RTC_FILE" 2>/dev/null || true
   fi
   resume_log "scheduled wake epoch=$EXPECTED_WAKE_EPOCH"
   sync
@@ -748,10 +748,10 @@ suspend_for(){
   RESUME_DELTA="$(resume_delta "$EXPECTED_WAKE_EPOCH" "$RESUME_EPOCH")"
   RESUME_REASON="$(classify_resume "$EXPECTED_WAKE_EPOCH" "$RESUME_EPOCH" "$WAKE_TOLERANCE_SECONDS")"
   USB_STORAGE_ACTIVE=0
-  PAPERCAST_STORAGE_AVAILABLE=1
+  FORECASTINK_STORAGE_AVAILABLE=1
   if [ "$RESUME_REASON" = "external-early" ] && usb_storage_active; then
     USB_STORAGE_ACTIVE=1
-    PAPERCAST_STORAGE_AVAILABLE=0
+    FORECASTINK_STORAGE_AVAILABLE=0
   fi
   resume_log "resume epoch=$RESUME_EPOCH"
   resume_log "resume delta=$RESUME_DELTA"
@@ -772,7 +772,7 @@ log "beta.45 start mode=$MODE"
 log "fonts regular=$RFONT bold=$BFONT numeric_regular=$NRFONT numeric_bold=$NBFONT"
 case "$MODE" in
   live|live-hourly)
-    printf '%s\n' "$$" >"$PAPERCAST_PID_FILE" 2>/dev/null || true
+    printf '%s\n' "$$" >"$FORECASTINK_PID_FILE" 2>/dev/null || true
     trap 'clean_exit; exit 0' INT TERM
     trap 'clean_exit' 0
     /usr/bin/lipc-set-prop com.lab126.powerd preventScreenSaver 1 >/dev/null 2>&1 || true

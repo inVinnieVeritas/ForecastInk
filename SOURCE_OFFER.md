@@ -1,6 +1,6 @@
 # Corresponding Source for Bundled FBInk
 
-PaperCast release packages bundle the FBInk command-line executable and shared library, which identify themselves as **FBInk v1.25.0 for Kindle**. FBInk is licensed under the GNU General Public License version 3 or, at your option, any later version (`GPL-3.0-or-later`).
+ForecastInk release packages bundle the FBInk command-line executable and shared library, which identify themselves as **FBInk v1.25.0 for Kindle**. FBInk is licensed under the GNU General Public License version 3 or, at your option, any later version (`GPL-3.0-or-later`).
 
 ## Exact corresponding source
 
@@ -9,9 +9,9 @@ PaperCast release packages bundle the FBInk command-line executable and shared l
 - Source archive: https://github.com/NiLuJe/FBInk/releases/download/v1.25.0/FBInk-v1.25.0.tar.xz
 - Source archive SHA-256: `d598e99ed20994e08e1bb768512bc55c97cee941ffe6b1ac237aa754690e1ed5`
 
-The source archive contains FBInk's source, build scripts, bundled component sources, credits, and license material. It is the source release corresponding to the version reported by PaperCast's bundled FBInk binaries.
+The source archive contains FBInk's source, build scripts, bundled component sources, credits, and license material. It is the source release corresponding to the version reported by ForecastInk's bundled FBInk binaries.
 
-PaperCast provides these directions as equivalent network access to corresponding source for recipients of the bundled object code. If the upstream download becomes unavailable while PaperCast continues to distribute these binaries, open an issue at https://github.com/inVinnieVeritas/PaperCast and the maintainers will provide an equivalent machine-readable copy at no charge.
+ForecastInk provides these directions as equivalent network access to corresponding source for recipients of the bundled object code. If the upstream download becomes unavailable while ForecastInk continues to distribute these binaries, open an issue at https://github.com/inVinnieVeritas/PaperCast and the maintainers will provide an equivalent machine-readable copy at no charge.
 
 ## Bundled object-code identification
 

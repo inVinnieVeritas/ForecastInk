@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-PaperCast's original source code, documentation, and project-owned artwork are licensed under the MIT License in [`LICENSE`](LICENSE). The components and data sources below are not relicensed by PaperCast; their own terms continue to apply.
+ForecastInk's original source code, documentation, and project-owned artwork are licensed under the MIT License in [`LICENSE`](LICENSE). The components and data sources below are not relicensed by ForecastInk; their own terms continue to apply.
 
 ## Bundled software
 
@@ -13,7 +13,7 @@ Bundled paths:
 - `fbink/lib/libfbink.so.1`
 - `fbink/lib/libfbink.so`
 
-FBInk is Copyright (c) NiLuJe and contributors and is licensed under the GNU General Public License, version 3 or (at your option) any later version (`GPL-3.0-or-later`). PaperCast invokes the FBInk command-line executable as a separate program. PaperCast does not link its own source code to the bundled shared library.
+FBInk is Copyright (c) NiLuJe and contributors and is licensed under the GNU General Public License, version 3 or (at your option) any later version (`GPL-3.0-or-later`). ForecastInk invokes the FBInk command-line executable as a separate program. ForecastInk does not link its own source code to the bundled shared library.
 
 The bundled executable and shared library identify themselves as `v1.25.0 for Kindle`.
 
@@ -44,16 +44,16 @@ The bundled executable identifies itself as `xh/0.16.1`. Its SHA-256 is `d77c9b6
 
 The nine hero icons under `assets/hero/` and the corresponding nine forecast icons under `assets/weather/` are raster adaptations of the Meteocons monochrome static SVG artwork. They cover `clear`, `clear-night`, `partly`, `partly-night`, `cloudy`, `fog`, `rain`, `snow`, and `thunder`.
 
-Meteocons is Copyright (c) 2020-present Bas Milius and is licensed under the MIT License. PaperCast's copies were rendered to PNG, normalized to the existing canvases, and optically strengthened for e-ink display.
+Meteocons is Copyright (c) 2020-present Bas Milius and is licensed under the MIT License. ForecastInk's copies were rendered to PNG, normalized to the existing canvases, and optically strengthened for e-ink display.
 
 - Project: https://github.com/basmilius/meteocons
 - License copy: [`licenses/Meteocons-MIT.txt`](licenses/Meteocons-MIT.txt)
 
-No other tracked image or binary asset contains an embedded third-party license notice. The remaining dashboard artwork, digit assets, and README images are treated as PaperCast project/user-supplied material. Their provenance should remain documented if any of them are replaced in the future.
+No other tracked image or binary asset contains an embedded third-party license notice. The remaining dashboard artwork, digit assets, and README images are treated as ForecastInk project/user-supplied material. Their provenance should remain documented if any of them are replaced in the future.
 
 ## Services and weather data
 
-These are network services/data sources, not code distributed under PaperCast's MIT License.
+These are network services/data sources, not code distributed under ForecastInk's MIT License.
 
 ### Open-Meteo
 
@@ -63,15 +63,15 @@ Weather and forecast data are delivered by Open-Meteo. Open-Meteo API data are l
 - Data license and attribution requirements: https://open-meteo.com/en/license
 - License: https://creativecommons.org/licenses/by/4.0/
 
-PaperCast selects, rounds, aggregates, labels, and renders values returned by the API. Those transformations are modifications for attribution purposes.
+ForecastInk selects, rounds, aggregates, labels, and renders values returned by the API. Those transformations are modifications for attribution purposes.
 
 Suggested attribution:
 
-> Weather data by Open-Meteo.com (CC BY 4.0), adapted for display by PaperCast.
+> Weather data by Open-Meteo.com (CC BY 4.0), adapted for display by ForecastInk.
 
 ### DWD ICON Seamless
 
-PaperCast explicitly requests the DWD ICON Seamless forecast model through Open-Meteo. The underlying model data are produced by the Deutscher Wetterdienst (DWD). DWD open geodata may be reused with a source note under DWD's open-data terms/GeoNutzV; Open-Meteo's delivered API dataset remains subject to Open-Meteo's CC BY 4.0 attribution terms above.
+ForecastInk explicitly requests the DWD ICON Seamless forecast model through Open-Meteo. The underlying model data are produced by the Deutscher Wetterdienst (DWD). DWD open geodata may be reused with a source note under DWD's open-data terms/GeoNutzV; Open-Meteo's delivered API dataset remains subject to Open-Meteo's CC BY 4.0 attribution terms above.
 
 - DWD ICON information: https://www.dwd.de/EN/ourservices/nwp_forecast_data/nwp_forecast_data.html
 - DWD open-data information: https://www.dwd.de/EN/ourservices/opendata/opendata.html
@@ -79,8 +79,8 @@ PaperCast explicitly requests the DWD ICON Seamless forecast model through Open-
 
 Suggested source note:
 
-> Forecast model data based on DWD ICON Seamless, © Deutscher Wetterdienst; delivered by Open-Meteo and adapted by PaperCast.
+> Forecast model data based on DWD ICON Seamless, © Deutscher Wetterdienst; delivered by Open-Meteo and adapted by ForecastInk.
 
 ## Trademarks and platform dependencies
 
-Kindle and Kindle Paperwhite are trademarks of Amazon. KUAL is a separately installed platform dependency and is not bundled in this repository. Kindle firmware fonts and system utilities are referenced at runtime but are not redistributed by PaperCast.
+Kindle and Kindle Paperwhite are trademarks of Amazon. KUAL is a separately installed platform dependency and is not bundled in this repository. Kindle firmware fonts and system utilities are referenced at runtime but are not redistributed by ForecastInk.

@@ -1,11 +1,11 @@
 #!/bin/sh
 
-# KUAL safety fallback for live PaperCast modes.
-BASE="/mnt/us/extensions/KindleDash"
-RECOVERY_LOG="$BASE/cache/kindledash.log"
-RECOVERY_TMP_LOG="/tmp/papercast-resume.log"
-PAPERCAST_PID_FILE="/tmp/papercast.pid"
-PAPERCAST_RTC_FILE="/tmp/papercast-rtc-path"
+# KUAL safety fallback for live ForecastInk modes.
+BASE="/mnt/us/extensions/ForecastInk"
+RECOVERY_LOG="$BASE/cache/forecastink.log"
+RECOVERY_TMP_LOG="/tmp/forecastink-resume.log"
+FORECASTINK_PID_FILE="/tmp/forecastink.pid"
+FORECASTINK_RTC_FILE="/tmp/forecastink-rtc-path"
 
 mkdir -p "$BASE/cache" 2>/dev/null || true
 recovery_log(){
@@ -14,28 +14,28 @@ recovery_log(){
   printf '%s\n' "$RECOVERY_MESSAGE" >>"$RECOVERY_LOG" 2>/dev/null || true
 }
 
-cancel_papercast_rtc(){
+cancel_forecastink_rtc(){
   RECOVERY_RTC_PATH=""
-  if [ -r "$PAPERCAST_RTC_FILE" ]; then
-    IFS= read -r RECOVERY_RTC_PATH <"$PAPERCAST_RTC_FILE" || RECOVERY_RTC_PATH=""
+  if [ -r "$FORECASTINK_RTC_FILE" ]; then
+    IFS= read -r RECOVERY_RTC_PATH <"$FORECASTINK_RTC_FILE" || RECOVERY_RTC_PATH=""
   fi
   case "$RECOVERY_RTC_PATH" in
     /sys/class/rtc/rtc0/wakealarm|/sys/class/rtc/rtc1/wakealarm)
       [ -e "$RECOVERY_RTC_PATH" ] && echo 0 >"$RECOVERY_RTC_PATH" 2>/dev/null || true
       ;;
   esac
-  rm -f "$PAPERCAST_RTC_FILE" 2>/dev/null || true
+  rm -f "$FORECASTINK_RTC_FILE" 2>/dev/null || true
 }
 
-stop_papercast(){
-  [ -r "$PAPERCAST_PID_FILE" ] || return 0
-  IFS= read -r RECOVERY_PID <"$PAPERCAST_PID_FILE" || RECOVERY_PID=""
+stop_forecastink(){
+  [ -r "$FORECASTINK_PID_FILE" ] || return 0
+  IFS= read -r RECOVERY_PID <"$FORECASTINK_PID_FILE" || RECOVERY_PID=""
   case "$RECOVERY_PID" in ''|*[!0-9]*) return 0 ;; esac
   [ -r "/proc/$RECOVERY_PID/cmdline" ] || return 0
   RECOVERY_CMDLINE="$(tr '\000' ' ' <"/proc/$RECOVERY_PID/cmdline" 2>/dev/null)"
   case "$RECOVERY_CMDLINE" in
-    *papercast-run*) kill "$RECOVERY_PID" 2>/dev/null || true ;;
-    *) recovery_log "recovery ignored stale PaperCast pid=$RECOVERY_PID"; return 0 ;;
+    *forecastink-run*) kill "$RECOVERY_PID" 2>/dev/null || true ;;
+    *) recovery_log "recovery ignored stale ForecastInk pid=$RECOVERY_PID"; return 0 ;;
   esac
 
   RECOVERY_WAIT=0
@@ -49,8 +49,8 @@ stop_papercast(){
 }
 
 recovery_log "recovery starting"
-cancel_papercast_rtc
-stop_papercast
+cancel_forecastink_rtc
+stop_forecastink
 
 RECOVERY_LAB_RC=0
 if [ -x /sbin/status ] && /sbin/status lab126_gui 2>/dev/null | grep -q 'start/running'; then
@@ -85,7 +85,7 @@ if [ -x /usr/bin/lipc-set-prop ]; then
 fi
 recovery_log "home request rc=$RECOVERY_HOME_RC"
 
-rm -f "$PAPERCAST_PID_FILE" 2>/dev/null || true
+rm -f "$FORECASTINK_PID_FILE" 2>/dev/null || true
 
 # This must remain the final Kindle restoration operation.
 RECOVERY_PREVENT_RC=127

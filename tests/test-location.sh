@@ -3,10 +3,10 @@ set -eu
 
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 PROJECT_ROOT="$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)"
-TEST_ROOT="${TMPDIR:-/tmp}/papercast-location-test.$$"
+TEST_ROOT="${TMPDIR:-/tmp}/forecastink-location-test.$$"
 
 case "$TEST_ROOT" in
-  "${TMPDIR:-/tmp}"/papercast-location-test.*) ;;
+  "${TMPDIR:-/tmp}"/forecastink-location-test.*) ;;
   *) echo "unsafe test directory: $TEST_ROOT" >&2; exit 1 ;;
 esac
 

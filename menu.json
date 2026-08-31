@@ -1,7 +1,7 @@
 {
   "items": [
     {
-      "name": "PaperCast",
+      "name": "ForecastInk",
       "priority": 100,
       "items": [
         {
@@ -29,13 +29,13 @@
           "exitmenu": true
         },
         {
-          "name": "Start PaperCast — Hourly only",
+          "name": "Start ForecastInk — Hourly only",
           "priority": 5,
           "action": "./bin/run.sh live-hourly",
           "exitmenu": true
         },
         {
-          "name": "Start PaperCast — Cycle all 3 views",
+          "name": "Start ForecastInk — Cycle all 3 views",
           "priority": 6,
           "action": "./bin/run.sh live",
           "exitmenu": true

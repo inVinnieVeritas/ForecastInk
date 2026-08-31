@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <extension>
-  <information><name>KindleDash</name><version>1.0.0-beta.38</version><author>KindleDash</author><id>KindleDash</id></information>
+  <information><name>ForecastInk</name><version>1.0.0-beta.38</version><author>ForecastInk</author><id>ForecastInk</id></information>
   <menus><menu type="json" dynamic="true">menu.json</menu></menus>
 </extension>

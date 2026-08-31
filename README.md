@@ -1,10 +1,10 @@
-# PaperCast
+# ForecastInk
 
-Turn an old jailbroken Kindle Paperwhite into a low-power e-ink weather dashboard.
+A low-power e-ink weather dashboard for jailbroken Kindles.
 
-![PaperCast](assets/papercast-hero.png)
+![ForecastInk](assets/forecastink-hero.png)
 
-PaperCast repurposes an old Kindle Paperwhite as a dedicated weather display. It fetches weather data, renders a clean portrait dashboard directly to the e-ink screen, then puts the Kindle back into deep sleep until the next scheduled refresh.
+ForecastInk repurposes an old Kindle Paperwhite as a dedicated weather display. It fetches weather data, renders a clean portrait dashboard directly to the e-ink screen, then puts the Kindle back into deep sleep until the next scheduled refresh.
 
 ## Current features
 
@@ -30,22 +30,22 @@ PaperCast repurposes an old Kindle Paperwhite as a dedicated weather display. It
 
 ## Real-device preview
 
-PaperCast can cycle hourly between three forecast views:
+ForecastInk can cycle hourly between three forecast views:
 
 <table>
   <tr>
     <td align="center" width="33%">
-      <img src="assets/papercast-hourly.jpg" alt="PaperCast Hourly view on a Kindle Paperwhite 1"><br>
+      <img src="assets/forecastink-hourly.jpg" alt="ForecastInk Hourly view on a Kindle Paperwhite 1"><br>
       <strong>Hourly</strong><br>
       <sub>Upcoming individual hours</sub>
     </td>
     <td align="center" width="33%">
-      <img src="assets/papercast-dayparts.jpg" alt="PaperCast Dayparts view on a Kindle Paperwhite 1"><br>
+      <img src="assets/forecastink-dayparts.jpg" alt="ForecastInk Dayparts view on a Kindle Paperwhite 1"><br>
       <strong>Dayparts</strong><br>
       <sub>Four broader periods of the day</sub>
     </td>
     <td align="center" width="33%">
-      <img src="assets/papercast-daily.jpg" alt="PaperCast Daily view on a Kindle Paperwhite 1"><br>
+      <img src="assets/forecastink-daily.jpg" alt="ForecastInk Daily view on a Kindle Paperwhite 1"><br>
       <strong>Daily</strong><br>
       <sub>Multi-day forecast</sub>
     </td>
@@ -56,7 +56,7 @@ The interface is designed specifically for e-ink rather than adapted from a phon
 
 ## How it works
 
-PaperCast uses Open-Meteo weather data with the DWD ICON Seamless forecast model. FBInk renders the dashboard directly to the Kindle framebuffer, while RTC wake alarms provide the hourly update schedule.
+ForecastInk uses Open-Meteo weather data with the DWD ICON Seamless forecast model. FBInk renders the dashboard directly to the Kindle framebuffer, while RTC wake alarms provide the hourly update schedule.
 
 A normal update cycle is:
 
@@ -83,7 +83,7 @@ The v0.9.3 public beta has been physically tested with:
 
 ## Current status
 
-PaperCast is a public beta release. The current known-good build is **v0.9.3**.
+ForecastInk is the successor to PaperCast. The current known-good public beta remains **PaperCast v0.9.3** while the new name and runtime directory are validated.
 
 It includes Hourly, Dayparts, and four-day forecast views. Precipitation probability and precipitation amount are shown in the current conditions and forecast views where corresponding Open-Meteo data is available.
 
@@ -96,27 +96,31 @@ Live mode can return to Kindle Home in a few seconds after a short power-button 
 - Kindle Paperwhite 1 for the currently tested hardware target
 - Firmware 5.6.1.1 for the currently tested firmware target
 
-PaperCast may work on other jailbroken Kindle models or firmware versions, but they have not yet been validated.
+ForecastInk may work on other jailbroken Kindle models or firmware versions, but they have not yet been validated.
 
 ## Installation
 
-1. Download and extract `PaperCast-v0.9.3.zip`.
-2. Copy the top-level `KindleDash/` extension directory to `/mnt/us/extensions/` on the Kindle.
-3. Confirm that the installed menu file is at `/mnt/us/extensions/KindleDash/menu.json` and the launcher is at `/mnt/us/extensions/KindleDash/bin/run.sh`.
-4. Safely disconnect the Kindle, open KUAL, and select **PaperCast**.
-5. Choose a direct preview action, **Start PaperCast — Hourly only**, or **Start PaperCast — Cycle all 3 views**.
+1. Download and extract the ForecastInk release ZIP.
+2. If upgrading from PaperCast v0.9.3 or earlier, save any custom `config.conf` values you want to keep.
+3. Remove the old `/mnt/us/extensions/KindleDash/` extension directory. ForecastInk does not automatically migrate files from the legacy directory.
+4. Copy the top-level `ForecastInk/` extension directory to `/mnt/us/extensions/` on the Kindle.
+5. Confirm that the installed menu file is at `/mnt/us/extensions/ForecastInk/menu.json` and the launcher is at `/mnt/us/extensions/ForecastInk/bin/run.sh`.
+6. Safely disconnect the Kindle, open KUAL, and select **ForecastInk**.
+7. Choose a direct preview action, **Start ForecastInk — Hourly only**, or **Start ForecastInk — Cycle all 3 views**.
 
-The project and public release are named PaperCast, but the tested runtime directory is still named `KindleDash`. Do not rename that directory: current scripts contain `/mnt/us/extensions/KindleDash` runtime paths.
+ForecastInk was previously released as PaperCast. PaperCast v0.9.3 and earlier used the `KindleDash/` directory shown above; the new `ForecastInk/` directory is a clean installation rather than an in-place rename.
 
-## Exiting PaperCast
+Fresh installations do not need the legacy-directory removal step.
 
-While PaperCast is suspended, press the power button briefly to return to Kindle Home. On the tested PW1 this takes approximately one to three seconds and does not show the tree/logo/progress sequence.
+## Exiting ForecastInk
 
-Connecting USB while PaperCast is suspended also exits live mode while leaving normal Kindle USB storage handling intact. After safely ejecting the drive, the Kindle returns to its normal Home/library interface. If the interface ever needs manual restoration, use **RECOVERY — Restore Kindle UI** from the PaperCast KUAL menu.
+While ForecastInk is suspended, press the power button briefly to return to Kindle Home. On the tested PW1 this takes approximately one to three seconds and does not show the tree/logo/progress sequence.
+
+Connecting USB while ForecastInk is suspended also exits live mode while leaving normal Kindle USB storage handling intact. After safely ejecting the drive, the Kindle returns to its normal Home/library interface. If the interface ever needs manual restoration, use **RECOVERY — Restore Kindle UI** from the ForecastInk KUAL menu.
 
 ## Configuration
 
-Edit `/mnt/us/extensions/KindleDash/config.conf` before starting live mode. For normal setup, enter a city and leave the resolved fields blank:
+Edit `/mnt/us/extensions/ForecastInk/config.conf` before starting live mode. For normal setup, enter a city and leave the resolved fields blank:
 
 ```conf
 LOCATION="Bangkok"
@@ -125,7 +129,7 @@ LONGITUDE=""
 TIMEZONE=""
 ```
 
-On the next launch, PaperCast uses Open-Meteo's geocoding API to resolve the best matching latitude, longitude, and timezone. The successful result is cached on the Kindle, so normal hourly refreshes do not repeat the geocoding request. `LOCATION` remains the label shown on the dashboard.
+On the next launch, ForecastInk uses Open-Meteo's geocoding API to resolve the best matching latitude, longitude, and timezone. The successful result is cached on the Kindle, so normal hourly refreshes do not repeat the geocoding request. `LOCATION` remains the label shown on the dashboard.
 
 A simple city name uses Open-Meteo's highest-ranked result. For ambiguous names, include a region or country in `LOCATION`:
 
@@ -157,7 +161,7 @@ Partial overrides are not mixed with geocoded values: either supply the complete
 
 ## Weather data
 
-PaperCast uses:
+ForecastInk uses:
 
 - Open-Meteo for weather data and forecast delivery
 - DWD ICON Seamless as the selected forecast model
@@ -179,21 +183,21 @@ The displayed current temperature and conditions are model-derived weather data.
 
 ## Project philosophy
 
-PaperCast is deliberately simple: reuse hardware that might otherwise sit in a drawer and turn it into a quiet, low-power information display.
+ForecastInk is deliberately simple: reuse hardware that might otherwise sit in a drawer and turn it into a quiet, low-power information display.
 
 No browser. No glowing LCD. No constant animation. Just weather on e-ink.
 
 ## Credits and attribution
 
-PaperCast builds on excellent open-source projects and public weather services:
+ForecastInk builds on excellent open-source projects and public weather services:
 
 - [Open-Meteo](https://open-meteo.com/) — weather API and forecast delivery; API data are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 - [DWD ICON](https://www.dwd.de/EN/ourservices/nwp_forecast_data/nwp_forecast_data.html) — forecast model data produced by © Deutscher Wetterdienst
 - [FBInk](https://github.com/NiLuJe/FBInk) — Kindle framebuffer rendering, licensed GPL-3.0-or-later
 - [Meteocons](https://github.com/basmilius/meteocons) — monochrome weather icon source, licensed MIT
 
-Weather data by [Open-Meteo.com](https://open-meteo.com/) (CC BY 4.0), adapted for display by PaperCast. Forecast model data are based on DWD ICON Seamless, © Deutscher Wetterdienst.
+Weather data by [Open-Meteo.com](https://open-meteo.com/) (CC BY 4.0), adapted for display by ForecastInk. Forecast model data are based on DWD ICON Seamless, © Deutscher Wetterdienst.
 
 ## License
 
-PaperCast's original source code, documentation, and project-owned artwork are licensed under the [MIT License](LICENSE). Bundled third-party binaries and artwork retain their own licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for exact versions, source links, notices, and data-attribution requirements.
+ForecastInk's original source code, documentation, and project-owned artwork are licensed under the [MIT License](LICENSE). Bundled third-party binaries and artwork retain their own licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for exact versions, source links, notices, and data-attribution requirements.

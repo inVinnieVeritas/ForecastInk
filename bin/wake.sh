@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Resume classification shared by the PaperCast runtime and deterministic tests.
+# Resume classification shared by the ForecastInk runtime and deterministic tests.
 WAKE_TOLERANCE_SECONDS="${WAKE_TOLERANCE_SECONDS:-90}"
 
 resume_delta() {

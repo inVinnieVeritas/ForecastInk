@@ -1,6 +1,6 @@
 # xh 0.16.1 embedded dependency inventory
 
-This inventory was derived from Cargo registry source paths embedded in PaperCast's bundled `bin/xh` executable and checked against the crates.io metadata for each exact version. It is an audit aid; each component remains subject to its own license text and copyright notices.
+This inventory was derived from Cargo registry source paths embedded in ForecastInk's bundled `bin/xh` executable and checked against the crates.io metadata for each exact version. It is an audit aid; each component remains subject to its own license text and copyright notices.
 
 The binary also contains Rust standard-library code built with Rust 1.62.1 (`e092d0b6b43f2de967af0887873151bb1c0b18d3`), licensed under MIT or Apache-2.0, and appears to use the musl C runtime, licensed under MIT-style terms. The TLS stack includes `ring` 0.16.20 and WebPKI 0.22.0; their exact custom/ISC license files are included beside this inventory.
 
