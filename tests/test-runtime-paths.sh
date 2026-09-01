@@ -55,7 +55,7 @@ assert_contains "$README" "\`$NEW_NAME/\`"
 assert_contains "$README" "$NEW_BASE/config.conf"
 assert_contains "$README" "/mnt/us/extensions/$OLD_RUNTIME_NAME/"
 assert_contains "$README" "previously released as $LEGACY_PROJECT_NAME"
-assert_contains "$SOURCE_OFFER" "https://github.com/inVinnieVeritas/$LEGACY_PROJECT_NAME"
+assert_contains "$SOURCE_OFFER" "https://github.com/inVinnieVeritas/$NEW_NAME"
 
 assert_not_contains "$RUN" "$OLD_RUNTIME_NAME"
 assert_not_contains "$RUN" "$INTERMEDIATE_BASE"

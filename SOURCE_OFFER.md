@@ -11,7 +11,7 @@ ForecastInk release packages bundle the FBInk command-line executable and shared
 
 The source archive contains FBInk's source, build scripts, bundled component sources, credits, and license material. It is the source release corresponding to the version reported by ForecastInk's bundled FBInk binaries.
 
-ForecastInk provides these directions as equivalent network access to corresponding source for recipients of the bundled object code. If the upstream download becomes unavailable while ForecastInk continues to distribute these binaries, open an issue at https://github.com/inVinnieVeritas/PaperCast and the maintainers will provide an equivalent machine-readable copy at no charge.
+ForecastInk provides these directions as equivalent network access to corresponding source for recipients of the bundled object code. If the upstream download becomes unavailable while ForecastInk continues to distribute these binaries, open an issue at https://github.com/inVinnieVeritas/ForecastInk and the maintainers will provide an equivalent machine-readable copy at no charge.
 
 ## Bundled object-code identification
 
