@@ -3,11 +3,11 @@
   "id": "forecastink_scribe_dev",
   "name": "ForecastInk Scribe Dev",
   "author": "ForecastInk contributors",
-  "description": "Professional Scribe home dashboard with current, hourly, and daypart forecasts.",
+  "description": "Scribe-native professional dashboard with current, hourly, daypart, and daily forecasts.",
   "version": [
     0,
     0,
-    7
+    8
   ],
   "dependencies": [],
   "supported_platforms": [

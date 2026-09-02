@@ -134,6 +134,7 @@ set_forecast_slot() {
         case "$target_hour" in 08|8|15|19) day_value=1 ;; *) day_value=0 ;; esac
     fi
     eval "${prefix}_LABEL=\$part_label"
+    eval "${prefix}_DAY_OFFSET=\$day_offset"
     eval "${prefix}_TEMP=\$(round_temp \"\$value\")"
     eval "${prefix}_ICON=\$(icon_name \"\$code_value\" \"\$day_value\")"
     eval "${prefix}_RAIN=\$rain_value"
@@ -215,7 +216,7 @@ parse_weather() {
     CURRENT_PRECIP="$(format_precip "$(nth_line "${PARSE_PREFIX}.hprecip" "$base_index")")"
 
     index=1
-    while [ "$index" -le 4 ]; do
+    while [ "$index" -le 8 ]; do
         item_number=$((base_index + index))
         time_value="$(nth_line "${PARSE_PREFIX}.htimes" "$item_number")"
         code_value="$(nth_line "${PARSE_PREFIX}.hcodes" "$item_number")"
@@ -235,7 +236,7 @@ parse_weather() {
     build_daypart_slots
 
     index=1
-    while [ "$index" -le 4 ]; do
+    while [ "$index" -le 7 ]; do
         item_number=$((index + 1))
         date_value="$(nth_line "${PARSE_PREFIX}.ddates" "$item_number")"
         high_value="$(nth_line "${PARSE_PREFIX}.dmax" "$item_number")"
@@ -299,17 +300,22 @@ set_offline_weather() {
     CURRENT_PRECIP="0.0"
     SUNRISE="--:--"
     SUNSET="--:--"
-    for index in 1 2 3 4; do
+    for index in 1 2 3 4 5 6 7 8; do
         eval "H${index}_LABEL=--:--"
         eval "H${index}_TEMP=--"
         eval "H${index}_ICON=cloudy"
         eval "H${index}_RAIN=0"
         eval "H${index}_PRECIP=0.0"
+    done
+    for index in 1 2 3 4; do
         eval "P${index}_LABEL=---"
+        eval "P${index}_DAY_OFFSET=0"
         eval "P${index}_TEMP=--"
         eval "P${index}_ICON=cloudy"
         eval "P${index}_RAIN=0"
         eval "P${index}_PRECIP=0.0"
+    done
+    for index in 1 2 3 4 5 6 7; do
         eval "D${index}_LABEL=---"
         eval "D${index}_HIGH=--"
         eval "D${index}_LOW=--"
@@ -327,7 +333,7 @@ fetch_weather() {
     fi
 
     timezone_url="$(printf '%s' "$TIMEZONE" | sed 's/+/%2B/g; s|/|%2F|g')"
-    WEATHER_URL="https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current=temperature_2m,apparent_temperature,weather_code,is_day&hourly=temperature_2m,weather_code,is_day,precipitation_probability,precipitation&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_sum,precipitation_probability_max,sunrise,sunset&timezone=${timezone_url}&precipitation_unit=mm&forecast_days=5&models=dwd_icon_seamless"
+    WEATHER_URL="https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current=temperature_2m,apparent_temperature,weather_code,is_day&hourly=temperature_2m,weather_code,is_day,precipitation_probability,precipitation&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_sum,precipitation_probability_max,sunrise,sunset&timezone=${timezone_url}&precipitation_unit=mm&forecast_days=8&models=dwd_icon_seamless"
 
     rm -f "$WEATHER_TMP"
     scribe_log "request_start=true endpoint=https://api.open-meteo.com/v1/forecast model=dwd_icon_seamless"
