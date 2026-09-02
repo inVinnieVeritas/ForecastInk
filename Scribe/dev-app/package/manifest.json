@@ -1,0 +1,17 @@
+{
+  "manifest_version": 2,
+  "id": "forecastink_scribe_dev",
+  "name": "ForecastInk Scribe Dev",
+  "author": "ForecastInk contributors",
+  "description": "Minimal graphical development app for Kindle Scribe.",
+  "version": [
+    0,
+    0,
+    1
+  ],
+  "dependencies": [],
+  "supported_platforms": [
+    "kindlehf"
+  ]
+}
+
