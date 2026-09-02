@@ -3,11 +3,11 @@
   "id": "forecastink_scribe_dev",
   "name": "ForecastInk Scribe Dev",
   "author": "ForecastInk contributors",
-  "description": "Visually refined Scribe-native ForecastInk weather dashboard prototype.",
+  "description": "Scribe-native ForecastInk Today dashboard with hourly, daypart, and daily cards.",
   "version": [
     0,
     0,
-    4
+    5
   ],
   "dependencies": [],
   "supported_platforms": [

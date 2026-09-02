@@ -20,11 +20,11 @@
     "forecastink_scribe_dev": {
       "name": "ForecastInk Scribe Dev",
       "author": "ForecastInk contributors",
-      "description": "Visually refined Scribe-native ForecastInk weather dashboard prototype.",
+      "description": "Scribe-native ForecastInk Today dashboard with hourly, daypart, and daily cards.",
       "artifacts": [
         {
-          "url": "packages/forecastink_scribe_dev/artifacts/forecastink_scribe_dev_0.0.4_kindlehf.kpkg",
-          "version": [0, 0, 4],
+          "url": "packages/forecastink_scribe_dev/artifacts/forecastink_scribe_dev_0.0.5_kindlehf.kpkg",
+          "version": [0, 0, 5],
           "dependencies": [],
           "supported_platforms": ["kindlehf"]
         }
