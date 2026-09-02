@@ -1,0 +1,21 @@
+{
+  "manifest_version": 2,
+  "id": "forecastink-scribe-dev",
+  "name": "ForecastInk Scribe Development",
+  "description": "Development repository for ForecastInk Kindle Scribe testing.",
+  "packages": {
+    "forecastink_scribe_probe": {
+      "name": "ForecastInk Scribe Probe",
+      "author": "ForecastInk contributors",
+      "description": "Read-only Kindle Scribe and framebuffer diagnostics; performs no rendering.",
+      "artifacts": [
+        {
+          "url": "packages/forecastink_scribe_probe/artifacts/forecastink_scribe_probe_0.0.1_kindlehf.kpkg",
+          "version": [0, 0, 1],
+          "dependencies": [],
+          "supported_platforms": ["kindlehf"]
+        }
+      ]
+    }
+  }
+}
