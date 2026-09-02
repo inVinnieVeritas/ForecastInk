@@ -7,8 +7,9 @@ XH="./bin/xh"
 PLATFORM_MODULE="./lib/scribe-platform.sh"
 LOCATION_MODULE="./lib/scribe-location.sh"
 WEATHER_MODULE="./lib/scribe-weather.sh"
+UI_MODULE="./lib/scribe-ui.sh"
 
-for required_module in "$PLATFORM_MODULE" "$LOCATION_MODULE" "$WEATHER_MODULE"; do
+for required_module in "$PLATFORM_MODULE" "$LOCATION_MODULE" "$WEATHER_MODULE" "$UI_MODULE"; do
     if [ ! -r "$required_module" ]; then
         echo "ForecastInk Scribe Dev: required module unavailable: $required_module" >&2
         exit 1
@@ -71,6 +72,7 @@ scribe_log "fbink_path=$SCRIBE_FBINK"
 
 . "$LOCATION_MODULE"
 . "$WEATHER_MODULE"
+. "$UI_MODULE"
 
 fetch_weather
 FETCH_RETURN_CODE=$?
@@ -101,24 +103,36 @@ scribe_log "parsed_next_four_hours=$H1_LABEL:$H1_TEMP,$H2_LABEL:$H2_TEMP,$H3_LAB
 scribe_log "parsed_dayparts=$P1_LABEL:$P1_TEMP,$P2_LABEL:$P2_TEMP,$P3_LABEL:$P3_TEMP,$P4_LABEL:$P4_TEMP"
 scribe_log "parsed_daily=$D1_LABEL:$D1_HIGH/$D1_LOW,$D2_LABEL:$D2_HIGH/$D2_LOW,$D3_LABEL:$D3_HIGH/$D3_LOW,$D4_LABEL:$D4_HIGH/$D4_LOW"
 
-MESSAGE="$(printf 'ForecastInk\n\n%s\n\n%s°C\nFeels %s°C\n\nHigh %s°   Low %s°\nRain %s%% / %s mm\n\nSunrise %s\nSunset %s\n\n%s\nUpdated %s' \
-    "$DISPLAY_LOCATION" "$TEMP" "$FEELS" "$HIGH" "$LOW" \
-    "$CURRENT_RAIN" "$CURRENT_PRECIP" "$SUNRISE" "$SUNSET" \
-    "$FETCH_STATE" "$WEATHER_UPDATED")"
+FULL_DATE="$(date '+%A, %B %d, %Y' 2>/dev/null)"
+[ -n "$FULL_DATE" ] || FULL_DATE="Date unavailable"
 
-scribe_log "render_start=true"
-scribe_log "fbink_command=$SCRIBE_FBINK -q -c -m -M -w -S 6 -C BLACK -B WHITE -- <weather diagnostic>"
-"$SCRIBE_FBINK" -q -c -m -M -w -S 6 -C BLACK -B WHITE -- "$MESSAGE" >>"$SCRIBE_LOG_FILE" 2>&1
-FBINK_RETURN_CODE=$?
-scribe_log "fbink_return_code=$FBINK_RETURN_CODE"
-
-if [ "$FBINK_RETURN_CODE" -ne 0 ]; then
-    scribe_log "final_status=failure reason=render"
-    exit "$FBINK_RETURN_CODE"
+if ! scribe_ui_prepare; then
+    scribe_log "main_render_result=capability_failure"
+    scribe_ui_render_capability_failure "$SCRIBE_UI_CAPABILITY_ERROR"
+    CAPABILITY_RENDER_RETURN_CODE=$?
+    scribe_log "capability_screen_return_code=$CAPABILITY_RENDER_RETURN_CODE"
+    scribe_log "display_hold_seconds=30"
+    sleep 30
+    scribe_log "final_status=failure reason=render_capability"
+    exit 1
 fi
 
-scribe_log "display_hold_seconds=15"
-sleep 15
+scribe_log "render_start=true"
+scribe_ui_render_dashboard "$DISPLAY_LOCATION" "$FULL_DATE"
+MAIN_RENDER_RETURN_CODE=$?
+scribe_log "main_render_return_code=$MAIN_RENDER_RETURN_CODE"
+
+if [ "$MAIN_RENDER_RETURN_CODE" -ne 0 ]; then
+    scribe_log "main_render_result=failure"
+    scribe_ui_render_capability_failure "Dashboard render failed"
+    sleep 30
+    scribe_log "final_status=failure reason=render"
+    exit "$MAIN_RENDER_RETURN_CODE"
+fi
+
+scribe_log "main_render_result=success"
+scribe_log "display_hold_seconds=30"
+sleep 30
 SLEEP_RETURN_CODE=$?
 scribe_log "sleep_return_code=$SLEEP_RETURN_CODE"
 

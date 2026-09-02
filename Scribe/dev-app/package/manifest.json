@@ -3,11 +3,11 @@
   "id": "forecastink_scribe_dev",
   "name": "ForecastInk Scribe Dev",
   "author": "ForecastInk contributors",
-  "description": "Weather-data smoke test for ForecastInk on Kindle Scribe.",
+  "description": "First Scribe-native ForecastInk weather dashboard prototype.",
   "version": [
     0,
     0,
-    2
+    3
   ],
   "dependencies": [],
   "supported_platforms": [
