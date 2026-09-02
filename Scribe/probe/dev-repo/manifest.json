@@ -20,11 +20,11 @@
     "forecastink_scribe_dev": {
       "name": "ForecastInk Scribe Dev",
       "author": "ForecastInk contributors",
-      "description": "First Scribe-native ForecastInk weather dashboard prototype.",
+      "description": "Visually refined Scribe-native ForecastInk weather dashboard prototype.",
       "artifacts": [
         {
-          "url": "packages/forecastink_scribe_dev/artifacts/forecastink_scribe_dev_0.0.3_kindlehf.kpkg",
-          "version": [0, 0, 3],
+          "url": "packages/forecastink_scribe_dev/artifacts/forecastink_scribe_dev_0.0.4_kindlehf.kpkg",
+          "version": [0, 0, 4],
           "dependencies": [],
           "supported_platforms": ["kindlehf"]
         }

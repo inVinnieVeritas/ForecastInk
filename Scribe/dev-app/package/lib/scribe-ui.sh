@@ -178,10 +178,10 @@ scribe_ui_draw_hour() {
     eval "hour_precip=\$H${hour_index}_PRECIP"
     hour_icon_path="$(scribe_ui_icon_path weather "$hour_icon")"
 
-    scribe_ui_draw_text "hour_${hour_index}_time" 50 1570 70 "$column_left" 360 BOLD CENTER "$hour_value" || return 1
-    scribe_ui_draw_image "hour_${hour_index}_icon" "$hour_icon_path" "$((column_left + 70))" 1660 220 220 || return 1
-    scribe_ui_draw_text "hour_${hour_index}_temperature" 74 1905 100 "$column_left" 360 BOLD CENTER "${hour_temp}°" || return 1
-    scribe_ui_draw_text "hour_${hour_index}_rain" 39 2025 60 "$column_left" 360 REGULAR CENTER "${hour_rain}% / ${hour_precip} mm" || return 1
+    scribe_ui_draw_text "hour_${hour_index}_time" 52 1490 72 "$column_left" 360 BOLD CENTER "$hour_value" || return 1
+    scribe_ui_draw_image "hour_${hour_index}_icon" "$hour_icon_path" "$((column_left + 70))" 1580 220 220 || return 1
+    scribe_ui_draw_text "hour_${hour_index}_temperature" 76 1815 100 "$column_left" 360 BOLD CENTER "${hour_temp}°" || return 1
+    scribe_ui_draw_text "hour_${hour_index}_rain" 40 1930 62 "$column_left" 360 REGULAR CENTER "${hour_rain}% / ${hour_precip} mm" || return 1
 }
 
 scribe_ui_render_dashboard() {
@@ -194,43 +194,43 @@ scribe_ui_render_dashboard() {
     scribe_log "canvas_clear_return_code=$clear_return_code"
     [ "$clear_return_code" -eq 0 ] || return "$clear_return_code"
 
-    scribe_ui_draw_text title 58 60 80 120 1620 REGULAR LEFT "ForecastInk" || return 1
-    scribe_ui_draw_text location 96 165 125 120 1620 BOLD LEFT "$dashboard_location" || return 1
-    scribe_ui_draw_text date 46 305 70 120 1620 REGULAR LEFT "$dashboard_date" || return 1
+    scribe_ui_draw_text title 54 50 76 120 1620 REGULAR LEFT "ForecastInk" || return 1
+    scribe_ui_draw_text location 100 135 125 120 1620 BOLD LEFT "$dashboard_location" || return 1
+    scribe_ui_draw_text date 46 260 70 120 1620 REGULAR LEFT "$dashboard_date" || return 1
 
-    scribe_ui_draw_image current_weather "$hero_icon_path" 120 470 520 520 || {
+    scribe_ui_draw_image current_weather "$hero_icon_path" 140 400 500 500 || {
         scribe_log "image_capability=failed"
         return 1
     }
     scribe_log "image_capability=available"
-    scribe_ui_draw_text current_temperature 220 430 285 710 1030 BOLD LEFT "${TEMP}°C" || return 1
-    scribe_ui_draw_text current_condition 76 715 95 710 1030 BOLD LEFT "$CONDITION" || return 1
-    scribe_ui_draw_text feels_like 52 825 70 710 1030 REGULAR LEFT "Feels like ${FEELS}°C" || return 1
-    scribe_ui_draw_text high_low 52 920 70 710 1030 REGULAR LEFT "High ${HIGH}°   Low ${LOW}°" || return 1
+    scribe_ui_draw_text current_temperature 210 375 270 700 1040 BOLD LEFT "${TEMP}°C" || return 1
+    scribe_ui_draw_text current_condition 76 650 95 700 1040 BOLD LEFT "$CONDITION" || return 1
+    scribe_ui_draw_text feels_like 52 755 70 700 1040 REGULAR LEFT "Feels like ${FEELS}°C" || return 1
+    scribe_ui_draw_text high_low 52 840 70 700 1040 REGULAR LEFT "High ${HIGH}°   Low ${LOW}°" || return 1
 
-    scribe_ui_draw_text rain_label 38 1110 55 120 360 REGULAR CENTER "RAIN CHANCE" || return 1
-    scribe_ui_draw_image rain_probability "./assets/ui/rain-probability.png" 264 1180 72 72 || return 1
-    scribe_ui_draw_text rain_value 58 1270 75 120 360 BOLD CENTER "${CURRENT_RAIN}%" || return 1
+    scribe_ui_draw_text rain_label 40 1010 58 120 360 REGULAR CENTER "RAIN CHANCE" || return 1
+    scribe_ui_draw_image rain_probability "./assets/ui/rain-probability.png" 262 1090 76 76 || return 1
+    scribe_ui_draw_text rain_value 60 1190 78 120 360 BOLD CENTER "${CURRENT_RAIN}%" || return 1
 
-    scribe_ui_draw_text precip_label 38 1110 55 525 360 REGULAR CENTER "PRECIPITATION" || return 1
-    scribe_ui_draw_text precip_value 58 1235 85 525 360 BOLD CENTER "${CURRENT_PRECIP} mm" || return 1
+    scribe_ui_draw_text precip_label 40 1010 58 525 360 REGULAR CENTER "PRECIPITATION" || return 1
+    scribe_ui_draw_text precip_value 62 1125 88 525 360 BOLD CENTER "${CURRENT_PRECIP} mm" || return 1
 
-    scribe_ui_draw_text sunrise_label 38 1110 55 930 360 REGULAR CENTER "SUNRISE" || return 1
-    scribe_ui_draw_image sunrise "./assets/ui/sunrise.png" 1074 1180 72 48 || return 1
-    scribe_ui_draw_text sunrise_value 58 1270 75 930 360 BOLD CENTER "$SUNRISE" || return 1
+    scribe_ui_draw_text sunrise_label 44 1005 62 930 360 BOLD CENTER "SUNRISE" || return 1
+    scribe_ui_draw_image sunrise "./assets/ui/sunrise.png" 1062 1085 96 64 || return 1
+    scribe_ui_draw_text sunrise_value 64 1190 82 930 360 BOLD CENTER "$SUNRISE" || return 1
 
-    scribe_ui_draw_text sunset_label 38 1110 55 1335 360 REGULAR CENTER "SUNSET" || return 1
-    scribe_ui_draw_image sunset "./assets/ui/sunset.png" 1479 1180 72 48 || return 1
-    scribe_ui_draw_text sunset_value 58 1270 75 1335 360 BOLD CENTER "$SUNSET" || return 1
+    scribe_ui_draw_text sunset_label 44 1005 62 1335 360 BOLD CENTER "SUNSET" || return 1
+    scribe_ui_draw_image sunset "./assets/ui/sunset.png" 1467 1085 96 64 || return 1
+    scribe_ui_draw_text sunset_value 64 1190 82 1335 360 BOLD CENTER "$SUNSET" || return 1
 
-    scribe_ui_draw_text next_hours_title 54 1450 75 120 1620 BOLD LEFT "NEXT FOUR HOURS" || return 1
+    scribe_ui_draw_text next_hours_title 60 1360 85 120 1620 BOLD LEFT "NEXT FOUR HOURS" || return 1
     scribe_ui_draw_hour 1 120 || return 1
     scribe_ui_draw_hour 2 525 || return 1
     scribe_ui_draw_hour 3 930 || return 1
     scribe_ui_draw_hour 4 1335 || return 1
 
-    scribe_ui_draw_text fetch_state 48 2265 65 120 760 BOLD LEFT "$FETCH_STATE" || return 1
-    scribe_ui_draw_text updated 40 2275 60 930 810 REGULAR CENTER "Updated $WEATHER_UPDATED" || return 1
+    scribe_ui_draw_text fetch_state 56 2170 72 120 760 BOLD LEFT "$FETCH_STATE" || return 1
+    scribe_ui_draw_text updated 46 2180 68 930 810 REGULAR CENTER "Updated $WEATHER_UPDATED" || return 1
 
     "$SCRIBE_FBINK" -q -w -s >>"$SCRIBE_LOG_FILE" 2>&1
     refresh_return_code=$?
