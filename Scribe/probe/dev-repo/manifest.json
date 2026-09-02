@@ -23,8 +23,8 @@
       "description": "Scribe-native ForecastInk Today dashboard with hourly, daypart, and daily cards.",
       "artifacts": [
         {
-          "url": "packages/forecastink_scribe_dev/artifacts/forecastink_scribe_dev_0.0.5_kindlehf.kpkg",
-          "version": [0, 0, 5],
+          "url": "packages/forecastink_scribe_dev/artifacts/forecastink_scribe_dev_0.0.6_kindlehf.kpkg",
+          "version": [0, 0, 6],
           "dependencies": [],
           "supported_platforms": ["kindlehf"]
         }

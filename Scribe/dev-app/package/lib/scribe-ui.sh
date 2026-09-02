@@ -252,20 +252,21 @@ scribe_ui_render_header() {
 scribe_ui_render_current_card() {
     current_location="$1"
     hero_icon_path="$(scribe_ui_icon_path hero "$ICON")"
+    scribe_log "top_card_layout=refined"
     scribe_ui_draw_box 90 175 1680 610 || return 1
-    scribe_ui_draw_text location 64 205 84 130 420 BOLD LEFT "$current_location" || return 1
-    scribe_ui_draw_image current_weather "$hero_icon_path" 160 310 360 360 || return 1
-    scribe_ui_draw_text current_temperature 148 260 165 620 980 BOLD LEFT "${TEMP}°C" || return 1
-    scribe_ui_draw_text current_condition 62 435 75 620 980 BOLD LEFT "$CONDITION" || return 1
-    scribe_ui_draw_text feels_like 44 515 58 620 900 REGULAR LEFT "Feels like ${FEELS}°C" || return 1
-    scribe_ui_draw_image rain_probability "./assets/ui/rain-probability.png" 620 595 44 44 || return 1
-    scribe_ui_draw_text rain_value 40 590 56 685 800 REGULAR LEFT "${CURRENT_RAIN}%   ${CURRENT_PRECIP} mm" || return 1
+    scribe_ui_draw_text location 64 205 84 140 500 BOLD LEFT "$current_location" || return 1
+    scribe_ui_draw_image current_weather "$hero_icon_path" 165 290 390 390 || return 1
+    scribe_ui_draw_text current_temperature 158 245 175 820 820 BOLD LEFT "${TEMP}°C" || return 1
+    scribe_ui_draw_text current_condition 64 435 75 840 760 BOLD LEFT "$CONDITION" || return 1
+    scribe_ui_draw_text feels_like 44 520 58 840 760 REGULAR LEFT "Feels like ${FEELS}°C" || return 1
+    scribe_ui_draw_image rain_probability "./assets/ui/rain-probability.png" 840 590 44 44 || return 1
+    scribe_ui_draw_text rain_value 40 585 56 905 650 REGULAR LEFT "${CURRENT_RAIN}%   ${CURRENT_PRECIP} mm" || return 1
     scribe_ui_draw_rule 120 690 1620 3 || return 1
-    scribe_ui_draw_image sunrise "./assets/ui/sunrise.png" 130 715 54 36 || return 1
-    scribe_ui_draw_text sunrise_value 34 708 48 200 340 REGULAR LEFT "Sunrise  $SUNRISE" || return 1
-    scribe_ui_draw_image sunset "./assets/ui/sunset.png" 570 715 54 36 || return 1
-    scribe_ui_draw_text sunset_value 34 708 48 640 340 REGULAR LEFT "Sunset  $SUNSET" || return 1
-    scribe_ui_draw_text high_low 44 706 56 1030 650 BOLD CENTER "High ${HIGH}° / Low ${LOW}°" || return 1
+    scribe_ui_draw_image sunrise "./assets/ui/sunrise.png" 140 715 54 36 || return 1
+    scribe_ui_draw_text sunrise_value 34 708 48 205 370 REGULAR LEFT "Sunrise  $SUNRISE" || return 1
+    scribe_ui_draw_image sunset "./assets/ui/sunset.png" 660 715 54 36 || return 1
+    scribe_ui_draw_text sunset_value 34 708 48 725 370 REGULAR LEFT "Sunset  $SUNSET" || return 1
+    scribe_ui_draw_text high_low 44 706 56 1120 560 BOLD CENTER "High ${HIGH}° / Low ${LOW}°" || return 1
 }
 
 scribe_ui_render_hourly_card() {
