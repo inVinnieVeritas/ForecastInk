@@ -3,15 +3,14 @@
   "id": "forecastink_scribe_dev",
   "name": "ForecastInk Scribe Dev",
   "author": "ForecastInk contributors",
-  "description": "Minimal graphical development app for Kindle Scribe.",
+  "description": "Weather-data smoke test for ForecastInk on Kindle Scribe.",
   "version": [
     0,
     0,
-    1
+    2
   ],
   "dependencies": [],
   "supported_platforms": [
     "kindlehf"
   ]
 }
-
