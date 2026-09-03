@@ -55,8 +55,15 @@ nth_line() {
 round_temp() {
     value="$1"
     case "$value" in
-        ''|--|*[!0-9.-]*) echo "$value" ;;
+        ''|null|--|*[!0-9.-]*) echo "--" ;;
         *) awk -v v="$value" 'BEGIN { printf "%.0f", v }' ;;
+    esac
+}
+
+is_numeric_weather_value() {
+    case "$1" in
+        ''|null|--|*[!0-9.-]*) return 1 ;;
+        *) return 0 ;;
     esac
 }
 
@@ -208,6 +215,11 @@ parse_weather() {
     printf '%s\n' "$hourly_object" | sed -n 's/.*"precipitation_probability":\[\([^]]*\)\].*/\1/p' | tr ',' '\n' >"${PARSE_PREFIX}.hrain"
     printf '%s\n' "$hourly_object" | sed -n 's/.*"precipitation":\[\([^]]*\)\].*/\1/p' | tr ',' '\n' >"${PARSE_PREFIX}.hprecip"
 
+    DAILY_DATE_COUNT="$(awk 'END { print NR }' "${PARSE_PREFIX}.ddates")"
+    DAILY_MAX_COUNT="$(awk 'END { print NR }' "${PARSE_PREFIX}.dmax")"
+    DAILY_MIN_COUNT="$(awk 'END { print NR }' "${PARSE_PREFIX}.dmin")"
+    DAILY_COMPLETE_FUTURE_COUNT=0
+
     HIGH="$(nth_line "${PARSE_PREFIX}.dmax" 1)"
     LOW="$(nth_line "${PARSE_PREFIX}.dmin" 1)"
     SUNRISE="$(clock_time "$(nth_line "${PARSE_PREFIX}.sunrise" 1)")"
@@ -259,13 +271,21 @@ parse_weather() {
         code_value="$(nth_line "${PARSE_PREFIX}.dcodes" "$item_number")"
         precip_value="$(nth_line "${PARSE_PREFIX}.dprecip" "$item_number")"
         rain_value="$(format_percent "$(nth_line "${PARSE_PREFIX}.drain" "$item_number")")"
-        [ -n "$high_value" ] || high_value="--"
-        [ -n "$low_value" ] || low_value="--"
-        [ -n "$code_value" ] || code_value=3
-        [ -n "$date_value" ] && day_label="$(weekday_short "$date_value")" || day_label="---"
+        if is_numeric_weather_value "$high_value" && is_numeric_weather_value "$low_value"; then
+            day_available=1
+            DAILY_COMPLETE_FUTURE_COUNT=$((DAILY_COMPLETE_FUTURE_COUNT + 1))
+        else
+            day_available=0
+        fi
+        case "$code_value" in ''|null|*[!0-9]*) code_value=3 ;; esac
+        case "$date_value" in
+            ''|null) day_label="---" ;;
+            *) day_label="$(weekday_short "$date_value")" ;;
+        esac
         eval "D${index}_LABEL=\$day_label"
         eval "D${index}_HIGH=\$(round_temp \"\$high_value\")"
         eval "D${index}_LOW=\$(round_temp \"\$low_value\")"
+        eval "D${index}_AVAILABLE=\$day_available"
         eval "D${index}_ICON=\$(icon_name \"\$code_value\" 1)"
         eval "D${index}_MM=\$(format_precip \"\$precip_value\")"
         eval "D${index}_RAIN=\$rain_value"
@@ -304,6 +324,10 @@ save_weather_cache() {
 set_offline_weather() {
     FETCH_STATE=OFFLINE
     WEATHER_UPDATED="unavailable"
+    DAILY_DATE_COUNT=0
+    DAILY_MAX_COUNT=0
+    DAILY_MIN_COUNT=0
+    DAILY_COMPLETE_FUTURE_COUNT=0
     TEMP="--"
     FEELS="--"
     HIGH="--"
@@ -336,6 +360,7 @@ set_offline_weather() {
         eval "D${index}_LABEL=---"
         eval "D${index}_HIGH=--"
         eval "D${index}_LOW=--"
+        eval "D${index}_AVAILABLE=0"
         eval "D${index}_ICON=cloudy"
         eval "D${index}_MM=0.0"
         eval "D${index}_RAIN=0"

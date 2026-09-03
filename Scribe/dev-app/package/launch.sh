@@ -23,6 +23,8 @@ if ! scribe_log_init "$LOG_FILE"; then
     exit 1
 fi
 
+scribe_log "launch_pid=$$"
+trap 'launch_exit_code=$?; scribe_log "launch_exit_code=$launch_exit_code"' 0
 scribe_log "date_time=$(date '+%Y-%m-%d %H:%M:%S %Z' 2>/dev/null)"
 
 if ! scribe_detect_device; then
@@ -101,7 +103,9 @@ scribe_log "parsed_sunrise=$SUNRISE"
 scribe_log "parsed_sunset=$SUNSET"
 scribe_log "parsed_next_four_hours=$H1_LABEL:$H1_TEMP,$H2_LABEL:$H2_TEMP,$H3_LABEL:$H3_TEMP,$H4_LABEL:$H4_TEMP"
 scribe_log "parsed_dayparts=$P1_LABEL:$P1_TEMP,$P2_LABEL:$P2_TEMP,$P3_LABEL:$P3_TEMP,$P4_LABEL:$P4_TEMP"
-scribe_log "parsed_daily=$D1_LABEL:$D1_HIGH/$D1_LOW,$D2_LABEL:$D2_HIGH/$D2_LOW,$D3_LABEL:$D3_HIGH/$D3_LOW,$D4_LABEL:$D4_HIGH/$D4_LOW"
+scribe_log "daily_array_lengths=dates:$DAILY_DATE_COUNT,max:$DAILY_MAX_COUNT,min:$DAILY_MIN_COUNT"
+scribe_log "daily_future_complete=$DAILY_COMPLETE_FUTURE_COUNT/7"
+scribe_log "parsed_daily=$D1_LABEL:$D1_HIGH/$D1_LOW,$D2_LABEL:$D2_HIGH/$D2_LOW,$D3_LABEL:$D3_HIGH/$D3_LOW,$D4_LABEL:$D4_HIGH/$D4_LOW,$D5_LABEL:$D5_HIGH/$D5_LOW,$D6_LABEL:$D6_HIGH/$D6_LOW,$D7_LABEL:$D7_HIGH/$D7_LOW"
 
 FULL_DATE="$(date '+%A, %B %d, %Y' 2>/dev/null)"
 [ -n "$FULL_DATE" ] || FULL_DATE="Date unavailable"
@@ -131,15 +135,6 @@ if [ "$MAIN_RENDER_RETURN_CODE" -ne 0 ]; then
 fi
 
 scribe_log "main_render_result=success"
-scribe_log "display_hold_seconds=30"
-sleep 30
-SLEEP_RETURN_CODE=$?
-scribe_log "sleep_return_code=$SLEEP_RETURN_CODE"
-
-if [ "$SLEEP_RETURN_CODE" -ne 0 ]; then
-    scribe_log "final_status=failure reason=display_hold"
-    exit "$SLEEP_RETURN_CODE"
-fi
-
+scribe_log "post_render_hold_seconds=0"
 scribe_log "final_status=success fetch_state=$FETCH_STATE"
 exit 0

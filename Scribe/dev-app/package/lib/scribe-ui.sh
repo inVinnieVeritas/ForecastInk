@@ -369,10 +369,27 @@ scribe_ui_draw_day_column() {
     eval "day_rain=\$D${day_index}_RAIN"
     day_icon_path="$(scribe_ui_icon_path weather "$day_icon")"
 
+    day_degree="$(printf '\302\260')"
+    case "$day_high" in ''|null|--) day_high="" ;; esac
+    case "$day_low" in ''|null|--) day_low="" ;; esac
+    if [ -n "$day_high" ] && [ -n "$day_low" ]; then
+        day_temperature_text="${day_high}${day_degree} / ${day_low}${day_degree}"
+    elif [ -n "$day_high" ]; then
+        day_temperature_text="High ${day_high}${day_degree}"
+    elif [ -n "$day_low" ]; then
+        day_temperature_text="Low ${day_low}${day_degree}"
+    else
+        day_temperature_text=""
+    fi
+
     day_icon_left="$((column_left + (column_width - 156) / 2))"
     scribe_ui_draw_text "day_${day_index}_label" 36 1910 44 "$column_left" "$column_width" BOLD CENTER "$day_label" || return 1
     scribe_ui_draw_image "day_${day_index}_icon" "$day_icon_path" "$day_icon_left" 1965 156 130 || return 1
-    scribe_ui_draw_text "day_${day_index}_high_low" 40 2102 48 "$column_left" "$column_width" BOLD CENTER "${day_high}° / ${day_low}°" || return 1
+    if [ -n "$day_temperature_text" ]; then
+        scribe_ui_draw_text "day_${day_index}_high_low" 40 2102 48 "$column_left" "$column_width" BOLD CENTER "$day_temperature_text" || return 1
+    else
+        scribe_log "daily_temperature_render label=day_${day_index} state=omitted_unavailable"
+    fi
     scribe_ui_draw_forecast_rain "day_${day_index}" "$day_rain" "$day_amount" "$column_left" 2160 30 28 28 "$column_width" || return 1
 }
 
