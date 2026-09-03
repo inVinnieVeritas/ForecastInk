@@ -135,6 +135,15 @@ if [ "$MAIN_RENDER_RETURN_CODE" -ne 0 ]; then
 fi
 
 scribe_log "main_render_result=success"
-scribe_log "post_render_hold_seconds=0"
+scribe_log "display_hold_seconds=30"
+sleep 30
+SLEEP_RETURN_CODE=$?
+scribe_log "sleep_return_code=$SLEEP_RETURN_CODE"
+
+if [ "$SLEEP_RETURN_CODE" -ne 0 ]; then
+    scribe_log "final_status=failure reason=display_hold"
+    exit "$SLEEP_RETURN_CODE"
+fi
+
 scribe_log "final_status=success fetch_state=$FETCH_STATE"
 exit 0
