@@ -40,6 +40,14 @@ icon_name() {
     esac
 }
 
+normalize_is_day() {
+    day_value="$(printf '%s' "$1" | tr -d '[:space:]')"
+    case "$day_value" in
+        0|1) printf '%s\n' "$day_value" ;;
+        *) printf '%s\n' "" ;;
+    esac
+}
+
 nth_line() {
     sed -n "${2}p" "$1" 2>/dev/null
 }
@@ -55,7 +63,9 @@ round_temp() {
 format_precip() {
     awk -v v="$1" 'BEGIN {
         if (v !~ /^[0-9]+([.][0-9]+)?$/) v=0
-        printf "%.1f", v + 0
+        v += 0
+        if (v > 0 && v < 0.1) printf "<0.1"
+        else printf "%.1f", v
     }'
 }
 
@@ -125,7 +135,7 @@ set_forecast_slot() {
     item_number=$((day_offset * 24 + target_hour_number + 1))
     value="$(nth_line "${PARSE_PREFIX}.htemps" "$item_number")"
     code_value="$(nth_line "${PARSE_PREFIX}.hcodes" "$item_number")"
-    day_value="$(nth_line "${PARSE_PREFIX}.hisday" "$item_number")"
+    day_value="$(normalize_is_day "$(nth_line "${PARSE_PREFIX}.hisday" "$item_number")")"
     rain_value="$(nth_line "${PARSE_PREFIX}.hrain" "$item_number")"
     [ -n "$value" ] || value="--"
     [ -n "$code_value" ] || code_value=3
@@ -133,8 +143,13 @@ set_forecast_slot() {
     if [ -z "$day_value" ]; then
         case "$target_hour" in 08|8|15|19) day_value=1 ;; *) day_value=0 ;; esac
     fi
+    [ "$part_label" = "TONIGHT" ] && day_value=0
+    canonical_time="$(printf '%02d:00' "$target_hour_number")"
+    condition_value="$(condition_text "$code_value")"
     eval "${prefix}_LABEL=\$part_label"
     eval "${prefix}_DAY_OFFSET=\$day_offset"
+    eval "${prefix}_TIME=\$canonical_time"
+    eval "${prefix}_CONDITION=\$condition_value"
     eval "${prefix}_TEMP=\$(round_temp \"\$value\")"
     eval "${prefix}_ICON=\$(icon_name \"\$code_value\" \"\$day_value\")"
     eval "${prefix}_RAIN=\$rain_value"
@@ -221,7 +236,7 @@ parse_weather() {
         time_value="$(nth_line "${PARSE_PREFIX}.htimes" "$item_number")"
         code_value="$(nth_line "${PARSE_PREFIX}.hcodes" "$item_number")"
         temp_value="$(nth_line "${PARSE_PREFIX}.htemps" "$item_number")"
-        day_value="$(nth_line "${PARSE_PREFIX}.hisday" "$item_number")"
+        day_value="$(normalize_is_day "$(nth_line "${PARSE_PREFIX}.hisday" "$item_number")")"
         rain_value="$(nth_line "${PARSE_PREFIX}.hrain" "$item_number")"
         precip_value="$(nth_line "${PARSE_PREFIX}.hprecip" "$item_number")"
         case "$rain_value" in ''|null|*[!0-9]*) rain_value=0 ;; esac
@@ -310,6 +325,8 @@ set_offline_weather() {
     for index in 1 2 3 4; do
         eval "P${index}_LABEL=---"
         eval "P${index}_DAY_OFFSET=0"
+        eval "P${index}_TIME=--:--"
+        eval "P${index}_CONDITION=Unavailable"
         eval "P${index}_TEMP=--"
         eval "P${index}_ICON=cloudy"
         eval "P${index}_RAIN=0"

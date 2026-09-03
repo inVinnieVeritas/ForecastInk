@@ -196,6 +196,14 @@ scribe_ui_is_zero() {
     esac
 }
 
+scribe_ui_precip_amount_text() {
+    case "$1" in
+        '<0.1') printf '%s\n' '<0.1 mm' ;;
+        ''|0|0.0|0.00|0.000) printf '%s\n' '0 mm' ;;
+        *) printf '%s mm\n' "$1" ;;
+    esac
+}
+
 scribe_ui_battery_percent() {
     for battery_capacity_file in /sys/class/power_supply/*/capacity; do
         [ -r "$battery_capacity_file" ] || continue
@@ -250,27 +258,20 @@ scribe_ui_draw_forecast_rain() {
         return 0
     fi
 
+    forecast_rain_amount_text="$(scribe_ui_precip_amount_text "$forecast_rain_precip")"
     forecast_rain_center="$((forecast_rain_left + forecast_rain_width / 2))"
-
-    if ! scribe_ui_is_zero "$forecast_rain_probability"; then
-        forecast_rain_icon_left="$((forecast_rain_center - forecast_rain_icon_size - 7))"
-        forecast_rain_text_left="$((forecast_rain_center + 7))"
-        forecast_rain_text_width="$((forecast_rain_width / 2 - 7))"
-        scribe_ui_draw_image "${forecast_rain_label}_rain_icon" "./assets/ui/rain-probability.png" \
-            "$forecast_rain_icon_left" "$forecast_rain_top" "$forecast_rain_icon_size" "$forecast_rain_icon_size" || return 1
-        scribe_ui_draw_text "${forecast_rain_label}_rain" "$forecast_rain_probability_size" "$((forecast_rain_top - 4))" \
-            "$((forecast_rain_icon_size + 8))" "$forecast_rain_text_left" "$forecast_rain_text_width" BOLD LEFT \
-            "${forecast_rain_probability}%" || return 1
-    fi
-
-    if ! scribe_ui_is_zero "$forecast_rain_precip"; then
-        forecast_precip_top="$((forecast_rain_top + forecast_rain_icon_size + 4))"
-        if scribe_ui_is_zero "$forecast_rain_probability"; then
-            forecast_precip_top="$((forecast_rain_top + 4))"
-        fi
-        scribe_ui_draw_text "${forecast_rain_label}_precip" "$forecast_rain_precip_size" "$forecast_precip_top" 34 \
-            "$forecast_rain_left" "$forecast_rain_width" REGULAR CENTER "${forecast_rain_precip} mm" || return 1
-    fi
+    forecast_rain_icon_left="$((forecast_rain_center - forecast_rain_icon_size - 7))"
+    forecast_rain_probability_left="$((forecast_rain_center + 7))"
+    forecast_rain_probability_width="$((forecast_rain_width / 2 - 7))"
+    scribe_ui_draw_image "${forecast_rain_label}_rain_icon" "./assets/ui/rain-probability.png" \
+        "$forecast_rain_icon_left" "$forecast_rain_top" "$forecast_rain_icon_size" "$forecast_rain_icon_size" || return 1
+    scribe_ui_draw_text "${forecast_rain_label}_rain" "$forecast_rain_probability_size" "$((forecast_rain_top - 4))" \
+        "$((forecast_rain_icon_size + 8))" "$forecast_rain_probability_left" "$forecast_rain_probability_width" BOLD LEFT \
+        "${forecast_rain_probability}%" || return 1
+    scribe_ui_draw_text "${forecast_rain_label}_precip" "$forecast_rain_precip_size" \
+        "$((forecast_rain_top + forecast_rain_icon_size + 4))" "$((forecast_rain_precip_size + 10))" \
+        "$forecast_rain_left" "$forecast_rain_width" REGULAR CENTER \
+        "$forecast_rain_amount_text" || return 1
 }
 
 scribe_ui_draw_current_rain() {
@@ -279,19 +280,11 @@ scribe_ui_draw_current_rain() {
         return 0
     fi
 
-    if ! scribe_ui_is_zero "$CURRENT_RAIN"; then
-        scribe_ui_draw_image rain_probability "./assets/ui/rain-probability.png" 920 760 56 56 || return 1
-        scribe_ui_draw_text rain_value 56 750 70 995 150 BOLD LEFT "${CURRENT_RAIN}%" || return 1
-    fi
-    if ! scribe_ui_is_zero "$CURRENT_PRECIP"; then
-        if ! scribe_ui_is_zero "$CURRENT_RAIN"; then
-            scribe_ui_draw_rule 1165 760 3 55 || return 1
-            current_precip_left=1195
-        else
-            current_precip_left=920
-        fi
-        scribe_ui_draw_text precip_value 40 758 62 "$current_precip_left" 220 REGULAR LEFT "${CURRENT_PRECIP} mm" || return 1
-    fi
+    current_precip_text="$(scribe_ui_precip_amount_text "$CURRENT_PRECIP")"
+    scribe_ui_draw_image rain_probability "./assets/ui/rain-probability.png" 1230 708 54 54 || return 1
+    scribe_ui_draw_text rain_value 52 700 66 1298 120 BOLD LEFT "${CURRENT_RAIN}%" || return 1
+    scribe_ui_draw_rule 1435 708 3 54 || return 1
+    scribe_ui_draw_text precip_value 52 700 66 1462 250 REGULAR LEFT "$current_precip_text" || return 1
 }
 
 scribe_ui_draw_hour_column() {
@@ -312,14 +305,34 @@ scribe_ui_draw_hour_column() {
 
 scribe_ui_daypart_display_label() {
     daypart_raw_label="$1"
-    daypart_day_offset="$2"
-    case "$daypart_day_offset:$daypart_raw_label" in
-        1:MORNING) printf '%s\n' "TOM AM" ;;
-        1:AFTERNOON) printf '%s\n' "TOM PM" ;;
-        1:EVENING) printf '%s\n' "TOM EVE" ;;
-        1:TONIGHT) printf '%s\n' "TOM NIGHT" ;;
+    case "$daypart_raw_label" in
+        TONIGHT|MORNING|AFTERNOON|EVENING) printf '%s\n' "$daypart_raw_label" ;;
         *) printf '%s\n' "$daypart_raw_label" ;;
     esac
+}
+
+scribe_ui_draw_daypart_rain() {
+    daypart_rain_label="$1"
+    daypart_rain_probability="$2"
+    daypart_rain_precip="$3"
+    daypart_rain_left="$4"
+    daypart_rain_top="$5"
+    daypart_rain_width="$6"
+    daypart_rain_center="$((daypart_rain_left + daypart_rain_width / 2))"
+
+    if scribe_ui_is_zero "$daypart_rain_probability" && scribe_ui_is_zero "$daypart_rain_precip"; then
+        scribe_log "rain_render label=$daypart_rain_label state=omitted_zero"
+        return 0
+    fi
+
+    daypart_rain_amount_text="$(scribe_ui_precip_amount_text "$daypart_rain_precip")"
+    scribe_ui_draw_image "${daypart_rain_label}_rain_icon" "./assets/ui/rain-probability.png" \
+        "$((daypart_rain_center - 145))" "$daypart_rain_top" 34 34 || return 1
+    scribe_ui_draw_text "${daypart_rain_label}_rain" 32 "$((daypart_rain_top - 4))" 42 \
+        "$((daypart_rain_center - 101))" 82 BOLD LEFT "${daypart_rain_probability}%" || return 1
+    scribe_ui_draw_rule "$((daypart_rain_center - 5))" "$daypart_rain_top" 3 34 || return 1
+    scribe_ui_draw_text "${daypart_rain_label}_precip" 26 "$((daypart_rain_top - 1))" 38 \
+        "$((daypart_rain_center + 20))" 125 REGULAR LEFT "$daypart_rain_amount_text" || return 1
 }
 
 scribe_ui_draw_daypart_column() {
@@ -327,6 +340,8 @@ scribe_ui_draw_daypart_column() {
     column_left="$2"
     eval "daypart_label=\$P${daypart_index}_LABEL"
     eval "daypart_day_offset=\$P${daypart_index}_DAY_OFFSET"
+    eval "daypart_time=\$P${daypart_index}_TIME"
+    eval "daypart_condition=\$P${daypart_index}_CONDITION"
     eval "daypart_temp=\$P${daypart_index}_TEMP"
     eval "daypart_icon=\$P${daypart_index}_ICON"
     eval "daypart_rain=\$P${daypart_index}_RAIN"
@@ -334,10 +349,12 @@ scribe_ui_draw_daypart_column() {
     daypart_icon_path="$(scribe_ui_icon_path weather "$daypart_icon")"
     daypart_display_label="$(scribe_ui_daypart_display_label "$daypart_label" "$daypart_day_offset")"
 
-    scribe_ui_draw_text "daypart_${daypart_index}_label" 42 1432 52 "$column_left" 410 BOLD CENTER "$daypart_display_label" || return 1
-    scribe_ui_draw_image "daypart_${daypart_index}_icon" "$daypart_icon_path" "$((column_left + 115))" 1494 180 145 || return 1
-    scribe_ui_draw_text "daypart_${daypart_index}_temperature" 60 1644 68 "$column_left" 410 BOLD CENTER "${daypart_temp}°" || return 1
-    scribe_ui_draw_forecast_rain "daypart_${daypart_index}" "$daypart_rain" "$daypart_precip" "$column_left" 1714 34 32 26 410 || return 1
+    scribe_ui_draw_text "daypart_${daypart_index}_label" 42 1426 52 "$column_left" 410 BOLD CENTER "$daypart_display_label" || return 1
+    scribe_ui_draw_text "daypart_${daypart_index}_time" 34 1474 42 "$column_left" 410 REGULAR CENTER "$daypart_time" || return 1
+    scribe_ui_draw_image "daypart_${daypart_index}_icon" "$daypart_icon_path" "$((column_left + 115))" 1518 180 130 || return 1
+    scribe_ui_draw_text "daypart_${daypart_index}_condition" 36 1652 44 "$column_left" 410 REGULAR CENTER "$daypart_condition" || return 1
+    scribe_ui_draw_text "daypart_${daypart_index}_temperature" 60 1694 68 "$column_left" 410 BOLD CENTER "${daypart_temp}°" || return 1
+    scribe_ui_draw_daypart_rain "daypart_${daypart_index}" "$daypart_rain" "$daypart_precip" "$column_left" 1768 410 || return 1
 }
 
 scribe_ui_draw_day_column() {
@@ -352,11 +369,11 @@ scribe_ui_draw_day_column() {
     eval "day_rain=\$D${day_index}_RAIN"
     day_icon_path="$(scribe_ui_icon_path weather "$day_icon")"
 
-    day_icon_left="$((column_left + (column_width - 150) / 2))"
+    day_icon_left="$((column_left + (column_width - 156) / 2))"
     scribe_ui_draw_text "day_${day_index}_label" 36 1910 44 "$column_left" "$column_width" BOLD CENTER "$day_label" || return 1
-    scribe_ui_draw_text "day_${day_index}_high_low" 34 1960 42 "$column_left" "$column_width" BOLD CENTER "${day_high}° / ${day_low}°" || return 1
-    scribe_ui_draw_image "day_${day_index}_icon" "$day_icon_path" "$day_icon_left" 2015 150 125 || return 1
-    scribe_ui_draw_forecast_rain "day_${day_index}" "$day_rain" "$day_amount" "$column_left" 2155 30 28 24 "$column_width" || return 1
+    scribe_ui_draw_image "day_${day_index}_icon" "$day_icon_path" "$day_icon_left" 1965 156 130 || return 1
+    scribe_ui_draw_text "day_${day_index}_high_low" 40 2102 48 "$column_left" "$column_width" BOLD CENTER "${day_high}° / ${day_low}°" || return 1
+    scribe_ui_draw_forecast_rain "day_${day_index}" "$day_rain" "$day_amount" "$column_left" 2160 30 28 28 "$column_width" || return 1
 }
 
 scribe_ui_render_header() {
@@ -371,20 +388,20 @@ scribe_ui_render_current_card() {
     hero_icon_path="$(scribe_ui_icon_path hero "$ICON")"
     hero_location="$(printf '%s\n' "$current_location" | tr '[:lower:]' '[:upper:]')"
     hero_scheduled_time="$(date '+%H:00')"
-    scribe_log "top_card_layout=approved-final-008"
+    scribe_log "top_card_layout=icon-polish-009"
     scribe_log "hero_scheduled_time=$hero_scheduled_time"
     scribe_ui_draw_text location 72 172 90 110 650 BOLD LEFT "$hero_location" || return 1
-    scribe_ui_draw_image current_weather "$hero_icon_path" 150 270 540 410 || return 1
-    scribe_ui_draw_image sunrise "./assets/ui/sunrise.png" 165 718 64 48 || return 1
-    scribe_ui_draw_text sunrise_value 40 716 56 245 470 REGULAR LEFT "Sunrise  $SUNRISE" || return 1
-    scribe_ui_draw_image sunset "./assets/ui/sunset.png" 165 785 64 48 || return 1
-    scribe_ui_draw_text sunset_value 40 783 56 245 470 REGULAR LEFT "Sunset  $SUNSET" || return 1
-    scribe_ui_draw_text hero_clock 128 165 145 900 780 BOLD LEFT "$hero_scheduled_time" || return 1
+    scribe_ui_draw_image current_weather "$hero_icon_path" 15 245 580 455 || return 1
+    scribe_ui_draw_image sunrise "./assets/ui/sunrise.png" 108 716 80 54 || return 1
+    scribe_ui_draw_text sunrise_value 44 713 60 205 500 REGULAR LEFT "Sunrise  $SUNRISE" || return 1
+    scribe_ui_draw_image sunset "./assets/ui/sunset.png" 108 784 80 54 || return 1
+    scribe_ui_draw_text sunset_value 44 781 60 205 500 REGULAR LEFT "Sunset  $SUNSET" || return 1
+    scribe_ui_draw_text hero_clock 110 165 145 900 780 BOLD LEFT "$hero_scheduled_time" || return 1
     scribe_ui_draw_text current_temperature 285 298 300 880 870 BOLD LEFT "${TEMP}°C" || return 1
     scribe_ui_draw_text current_condition 86 588 100 910 800 BOLD LEFT "$CONDITION" || return 1
-    scribe_ui_draw_text feels_like 52 686 66 910 800 REGULAR LEFT "Feels ${FEELS}°C" || return 1
+    scribe_ui_draw_text feels_like 52 700 66 910 300 REGULAR LEFT "Feels ${FEELS}°C" || return 1
     scribe_ui_draw_current_rain || return 1
-    scribe_ui_draw_text high_low 54 825 66 920 790 BOLD LEFT "High ${HIGH}° / Low ${LOW}°" || return 1
+    scribe_ui_draw_text high_low 54 790 66 920 790 BOLD LEFT "High ${HIGH}° / Low ${LOW}°" || return 1
 }
 
 scribe_ui_render_hourly_card() {
@@ -431,7 +448,7 @@ scribe_ui_render_footer() {
 
 scribe_ui_render_dashboard() {
     dashboard_location="$1"
-    scribe_log "layout_version=scribe-home-008"
+    scribe_log "layout_version=scribe-home-009"
     scribe_log "home_daily_section=retained_professional_strip"
     scribe_log "border_asset=./assets/ui/black.png"
 
