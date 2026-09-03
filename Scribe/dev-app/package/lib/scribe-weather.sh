@@ -108,6 +108,13 @@ weekday_short() {
     }'
 }
 
+calendar_date_short() {
+    printf '%s\n' "$1" | awk -F- '
+        BEGIN { split("JAN FEB MAR APR MAY JUN JUL AUG SEP OCT NOV DEC", months, " ") }
+        NF == 3 && $2 + 0 >= 1 && $2 + 0 <= 12 { print ($3 + 0) " " months[$2 + 0] }
+    '
+}
+
 daypart_precip_total() {
     part_label="$1"
     day_offset="$2"
@@ -264,7 +271,7 @@ parse_weather() {
 
     index=1
     while [ "$index" -le 7 ]; do
-        item_number=$((index + 1))
+        item_number=$index
         date_value="$(nth_line "${PARSE_PREFIX}.ddates" "$item_number")"
         high_value="$(nth_line "${PARSE_PREFIX}.dmax" "$item_number")"
         low_value="$(nth_line "${PARSE_PREFIX}.dmin" "$item_number")"
@@ -279,13 +286,20 @@ parse_weather() {
         fi
         case "$code_value" in ''|null|*[!0-9]*) code_value=3 ;; esac
         case "$date_value" in
-            ''|null) day_label="---" ;;
-            *) day_label="$(weekday_short "$date_value")" ;;
+            ''|null) day_label="---"; day_date="--" ;;
+            *) day_label="$(weekday_short "$date_value")"; day_date="$(calendar_date_short "$date_value")" ;;
         esac
+        if is_numeric_weather_value "$precip_value" || is_numeric_weather_value "$(nth_line "${PARSE_PREFIX}.drain" "$item_number")"; then
+            day_precip_available=1
+        else
+            day_precip_available=0
+        fi
         eval "D${index}_LABEL=\$day_label"
+        eval "D${index}_DATE=\$day_date"
         eval "D${index}_HIGH=\$(round_temp \"\$high_value\")"
         eval "D${index}_LOW=\$(round_temp \"\$low_value\")"
         eval "D${index}_AVAILABLE=\$day_available"
+        eval "D${index}_PRECIP_AVAILABLE=\$day_precip_available"
         eval "D${index}_ICON=\$(icon_name \"\$code_value\" 1)"
         eval "D${index}_MM=\$(format_precip \"\$precip_value\")"
         eval "D${index}_RAIN=\$rain_value"
@@ -358,9 +372,11 @@ set_offline_weather() {
     done
     for index in 1 2 3 4 5 6 7; do
         eval "D${index}_LABEL=---"
+        eval "D${index}_DATE=--"
         eval "D${index}_HIGH=--"
         eval "D${index}_LOW=--"
         eval "D${index}_AVAILABLE=0"
+        eval "D${index}_PRECIP_AVAILABLE=0"
         eval "D${index}_ICON=cloudy"
         eval "D${index}_MM=0.0"
         eval "D${index}_RAIN=0"

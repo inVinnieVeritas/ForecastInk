@@ -23,8 +23,8 @@
       "description": "Scribe-native professional dashboard with current, hourly, daypart, and daily forecasts.",
       "artifacts": [
         {
-          "url": "packages/forecastink_scribe_dev/artifacts/forecastink_scribe_dev_0.0.11_kindlehf.kpkg",
-          "version": [0, 0, 11],
+          "url": "packages/forecastink_scribe_dev/artifacts/forecastink_scribe_dev_0.0.12_kindlehf.kpkg",
+          "version": [0, 0, 12],
           "dependencies": [],
           "supported_platforms": ["kindlehf"]
         }
