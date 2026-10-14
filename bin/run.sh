@@ -144,14 +144,14 @@ round_temp(){
 
 format_precip(){
   awk -v v="$1" 'BEGIN {
-    if (v !~ /^[0-9]+([.][0-9]+)?$/) v=0
+    if (v !~ /^[0-9]+([.][0-9]+)?$/) { printf "--"; exit }
     printf "%.1f", v + 0
   }'
 }
 
 format_percent(){
   awk -v v="$1" 'BEGIN {
-    if (v !~ /^[0-9]+([.][0-9]+)?$/) v=0
+    if (v !~ /^[0-9]+([.][0-9]+)?$/ || v > 100) { printf "--"; exit }
     printf "%.0f", v + 0
   }'
 }
@@ -169,21 +169,21 @@ daypart_precip_total(){
     TONIGHT)
       START_ABS=$((DAY_OFFSET * 24 + 23)); END_ABS=$(((DAY_OFFSET + 1) * 24 + 6)) ;;
     *)
-      echo "0.0"
+      echo "--"
       return ;;
   esac
 
-  TOTAL=0
-  A="$START_ABS"
-  while [ "$A" -le "$END_ABS" ]; do
-    V="$(nth_line /tmp/kd_hprecip "$((A + 1))")"
-    TOTAL="$(awk -v total="$TOTAL" -v value="$V" 'BEGIN {
-      if (value !~ /^[0-9]+([.][0-9]+)?$/) value=0
-      printf "%.4f", total + value
-    }')"
-    A=$((A + 1))
-  done
-  format_precip "$TOTAL"
+  # Missing hours/nulls make the total unknown, not an understated 0 mm.
+  awk -v first="$((START_ABS + 1))" -v last="$((END_ABS + 1))" '
+    NR >= first && NR <= last {
+      if ($0 !~ /^[0-9]+([.][0-9]+)?$/) missing=1
+      total += $0; count++
+    }
+    END {
+      if (missing || count != last - first + 1) printf "--"
+      else printf "%.1f", total
+    }
+  ' /tmp/kd_hprecip
 }
 
 weekday_short(){
@@ -209,9 +209,9 @@ set_forecast_slot(){
   C="$(nth_line /tmp/kd_hcodes "$N")"
   D="$(nth_line /tmp/kd_hisday "$N")"
   R="$(nth_line /tmp/kd_hrain "$N")"
-  [ -n "$V" ] || V="--"
+  case "$V" in ''|null) V="--" ;; esac
   [ -n "$C" ] || C=3
-  case "$R" in \'\'|null|*[!0-9]*) R=0 ;; esac
+  R="$(format_percent "$R")"
   if [ -z "$D" ]; then
     case "$TARGET_HOUR" in 08|8|15|19) D=1 ;; *) D=0 ;; esac
   fi
@@ -224,13 +224,13 @@ set_forecast_slot(){
 
 build_daypart_slots(){
   SLOT_INDEX=1
-  DAY_OFFSET=0
+  DAY_OFFSET="$FORECAST_DAY_OFFSET"
   while [ "$SLOT_INDEX" -le 4 ]; do
     for SLOT in "08 MORNING" "15 AFTERNOON" "19 EVENING" "23 TONIGHT"; do
       SLOT_HOUR="${SLOT%% *}"
       SLOT_LABEL="${SLOT#* }"
       SLOT_HOUR_NUM="${SLOT_HOUR#0}"
-      if [ "$DAY_OFFSET" -gt 0 ] || [ "$SLOT_HOUR_NUM" -ge "$HNOW" ]; then
+      if [ "$DAY_OFFSET" -gt "$FORECAST_DAY_OFFSET" ] || [ "$SLOT_HOUR_NUM" -ge "$HNOW" ]; then
         set_forecast_slot "P${SLOT_INDEX}" "$SLOT_LABEL" "$DAY_OFFSET" "$SLOT_HOUR"
         SLOT_INDEX=$((SLOT_INDEX + 1))
         [ "$SLOT_INDEX" -gt 4 ] && break
@@ -251,6 +251,14 @@ parse_weather(){
   DOBJ="$(echo "$ONE" | awk 'match($0,/"daily":\{[^}]*\}/){print substr($0,RSTART,RLENGTH)}')"
   HOBJ="$(echo "$ONE" | awk 'match($0,/"hourly":\{[^}]*\}/){print substr($0,RSTART,RLENGTH)}')"
 
+  # Do not overwrite a good cache with an error page or an unusable response.
+  [ -n "$TEMP" ] && [ -n "$DOBJ" ] && [ -n "$HOBJ" ] || return 1
+  case "$ONE" in *'}') ;; *) return 1 ;; esac
+  case "$HOBJ" in *'"time":['*) ;; *) return 1 ;; esac
+  case "$HOBJ" in *'"temperature_2m":['*) ;; *) return 1 ;; esac
+  case "$DOBJ" in *'"time":['*) ;; *) return 1 ;; esac
+  case "$DOBJ" in *'"temperature_2m_max":['*) ;; *) return 1 ;; esac
+
   echo "$DOBJ" | sed -n 's/.*"temperature_2m_max":\[\([^]]*\)\].*/\1/p' | tr ',' '\n' >/tmp/kd_dmax
   echo "$DOBJ" | sed -n 's/.*"temperature_2m_min":\[\([^]]*\)\].*/\1/p' | tr ',' '\n' >/tmp/kd_dmin
   echo "$DOBJ" | sed -n 's/.*"time":\[\([^]]*\)\].*/\1/p' | tr ',' '\n' | tr -d '"' >/tmp/kd_ddates
@@ -260,10 +268,17 @@ parse_weather(){
   echo "$DOBJ" | sed -n 's/.*"precipitation_sum":\[\([^]]*\)\].*/\1/p' | tr ',' '\n' >/tmp/kd_dprecip
   echo "$DOBJ" | sed -n 's/.*"precipitation_probability_max":\[\([^]]*\)\].*/\1/p' | tr ',' '\n' >/tmp/kd_drain
 
-  HIGH="$(nth_line /tmp/kd_dmax 1)"
-  LOW="$(nth_line /tmp/kd_dmin 1)"
-  SUNRISE="$(clock_time "$(nth_line /tmp/kd_sunrise 1)")"
-  SUNSET="$(clock_time "$(nth_line /tmp/kd_sunset 1)")"
+  # Cached responses may start on an earlier day. Select forecast slots by
+  # their dates, not by the assumption that line 1 is today's midnight.
+  FORECAST_DAY_OFFSET="$(awk -v day="$(date '+%Y-%m-%d')" '
+    $0 == day { print NR - 1; found=1; exit }
+    END { if (!found) print NR }
+  ' /tmp/kd_ddates)"
+  TODAY_INDEX=$((FORECAST_DAY_OFFSET + 1))
+  HIGH="$(nth_line /tmp/kd_dmax "$TODAY_INDEX")"
+  LOW="$(nth_line /tmp/kd_dmin "$TODAY_INDEX")"
+  SUNRISE="$(clock_time "$(nth_line /tmp/kd_sunrise "$TODAY_INDEX")")"
+  SUNSET="$(clock_time "$(nth_line /tmp/kd_sunset "$TODAY_INDEX")")"
 
   echo "$HOBJ" | sed -n 's/.*"time":\[\([^]]*\)\].*/\1/p' | tr ',' '\n' | tr -d '"' >/tmp/kd_htimes
   echo "$HOBJ" | sed -n 's/.*"temperature_2m":\[\([^]]*\)\].*/\1/p' | tr ',' '\n' >/tmp/kd_htemps
@@ -288,9 +303,12 @@ parse_weather(){
 
   HNOW="$(date '+%H')"
   HNOW="${HNOW#0}"; [ -n "$HNOW" ] || HNOW=0
-  BASE_INDEX=$((HNOW + 1))
+  BASE_INDEX="$(awk -v hour="$(date '+%Y-%m-%dT%H:00')" '
+    $0 == hour { print NR; found=1; exit }
+    END { if (!found) print NR + 1 }
+  ' /tmp/kd_htimes)"
   CURRENT_RAIN="$(nth_line /tmp/kd_hrain "$BASE_INDEX")"
-  case "$CURRENT_RAIN" in ''|null|*[!0-9]*) CURRENT_RAIN=0 ;; esac
+  CURRENT_RAIN="$(format_percent "$CURRENT_RAIN")"
   CURRENT_PRECIP="$(nth_line /tmp/kd_hprecip "$BASE_INDEX")"
   CURRENT_PRECIP="$(format_precip "$CURRENT_PRECIP")"
 
@@ -303,7 +321,8 @@ parse_weather(){
     D="$(nth_line /tmp/kd_hisday "$N")"
     R="$(nth_line /tmp/kd_hrain "$N")"
     A="$(nth_line /tmp/kd_hprecip "$N")"
-    case "$R" in ''|null|*[!0-9]*) R=0 ;; esac
+    R="$(format_percent "$R")"
+    case "$V" in ''|null) V="--" ;; esac
     if [ -z "$D" ]; then
       HH="${T#*T}"
       HH="${HH%%:*}"
@@ -321,7 +340,7 @@ parse_weather(){
 
   I=1
   while [ $I -le 4 ]; do
-    N=$((I + 1))
+    N=$((TODAY_INDEX + I))
     DD="$(nth_line /tmp/kd_ddates "$N")"
     DH="$(nth_line /tmp/kd_dmax "$N")"
     DL="$(nth_line /tmp/kd_dmin "$N")"
@@ -360,20 +379,39 @@ weather_location_key(){
 
 weather_cache_matches(){
   [ -s "$CACHE" ] || return 1
-  if [ -f "$WEATHER_CACHE_LOCATION" ]; then
-    IFS= read -r CACHED_WEATHER_LOCATION <"$WEATHER_CACHE_LOCATION" || return 1
+  [ -f "$WEATHER_CACHE_LOCATION" ] || return 1
+  CACHED_WEATHER_LOCATION=""
+  # RC1 wrote this line without LF. read sets the value but returns failure
+  # at EOF: accept that legacy format, then compare the actual key strictly.
+  IFS= read -r CACHED_WEATHER_LOCATION <"$WEATHER_CACHE_LOCATION" || true
+  [ -n "$CACHED_WEATHER_LOCATION" ] &&
     [ "$CACHED_WEATHER_LOCATION" = "$(weather_location_key)" ]
-    return
+}
+
+load_weather_cache_time(){
+  WEATHER_LAST_SUCCESS="$(sed -n '2p' "$WEATHER_CACHE_LOCATION")"
+  if [ -z "$WEATHER_LAST_SUCCESS" ]; then
+    # A legacy cache has no saved fetch time. Its device-side mtime is the
+    # last cache write, not this failed attempt; never substitute date now.
+    WEATHER_LAST_SUCCESS="$(date -r "$CACHE" '+%Y-%m-%d %H:%M' 2>/dev/null)"
   fi
-  # Backward compatibility for an existing pre-location-feature cache when
-  # the user still has a complete explicit override.
-  [ "$LOCATION_SOURCE" = "explicit" ]
+  [ -n "$WEATHER_LAST_SUCCESS" ] || WEATHER_LAST_SUCCESS="unknown"
+  WEATHER_UPDATED="${WEATHER_LAST_SUCCESS##* }"
 }
 
 save_weather_cache(){
   CACHE_KEY_NEW="${WEATHER_CACHE_LOCATION}.new"
-  cp "$TMP" "$CACHE" 2>/dev/null || return 1
-  weather_location_key >"$CACHE_KEY_NEW" 2>/dev/null || return 1
+  CACHE_NEW="${CACHE}.new"
+  cp "$TMP" "$CACHE_NEW" 2>/dev/null || return 1
+  {
+    printf '%s\n' "$(weather_location_key)"
+    printf '%s\n' "$WEATHER_LAST_SUCCESS"
+  } >"$CACHE_KEY_NEW" 2>/dev/null || return 1
+  # The identity/time file is the commit marker. Invalidate it before
+  # replacing the payload, so an interrupted write cannot bless a new
+  # location's JSON with an old location's identity or update time.
+  rm -f "$WEATHER_CACHE_LOCATION" 2>/dev/null || return 1
+  mv "$CACHE_NEW" "$CACHE" 2>/dev/null || return 1
   mv "$CACHE_KEY_NEW" "$WEATHER_CACHE_LOCATION" 2>/dev/null || return 1
   return 0
 }
@@ -381,8 +419,9 @@ save_weather_cache(){
 set_offline_weather(){
   FETCH_STATE=OFFLINE
   TEMP="--"; FEELS="--"; HIGH="--"; LOW="--"; CONDITION=Offline; ICON=cloudy
-  CURRENT_RAIN=0
-  CURRENT_PRECIP="0.0"
+  WEATHER_UPDATED="--:--"; WEATHER_LAST_SUCCESS=""
+  CURRENT_RAIN="--"
+  CURRENT_PRECIP="--"
   SUNRISE="--:--"; SUNSET="--:--"
   for I in 1 2 3 4; do
     eval H${I}_LABEL=\"--:--\"
@@ -390,19 +429,58 @@ set_offline_weather(){
     eval H${I}_ICON=\"cloudy\"
     eval P${I}_LABEL=\"---\"
     eval P${I}_TEMP=\"--\"
-    eval H${I}_RAIN=\"0\"
-    eval H${I}_PRECIP=\"0.0\"
-    eval P${I}_RAIN="0"
-    eval P${I}_PRECIP=\"0.0\"
+    eval H${I}_RAIN=\"--\"
+    eval H${I}_PRECIP=\"--\"
+    eval P${I}_RAIN=\"--\"
+    eval P${I}_PRECIP=\"--\"
     eval P${I}_ICON=\"cloudy\"
     eval D${I}_LABEL=\"---\"
     eval D${I}_HIGH=\"--\"
     eval D${I}_LOW=\"--\"
     eval D${I}_ICON=\"cloudy\"
-    eval D${I}_MM=\"0.0\"
-    eval D${I}_RAIN=\"0\"
+    eval D${I}_MM=\"--\"
+    eval D${I}_RAIN=\"--\"
   done
 }
+
+log_fetch_error(){
+  # Header-only xh output: no response body, at most 8 lines / 2048 bytes
+  # per failed request. head -c is optional in stripped-down BusyBox builds.
+  # Use basic POSIX dd/awk options and check each stage separately: a failed
+  # producer in a shell pipeline otherwise looks like an empty successful read.
+  DETAILS_LIMITED="${FETCH_DETAILS}.limited"
+  DETAILS_LINES="${FETCH_DETAILS}.lines"
+  if dd if="$FETCH_DETAILS" bs=2048 count=1 >"$DETAILS_LIMITED" 2>/dev/null; then
+    if LC_ALL=C awk 'NR <= 8 { gsub(/\r/, ""); print } NR >= 8 { exit }' \
+      "$DETAILS_LIMITED" >"$DETAILS_LINES" 2>/dev/null; then
+      if [ -s "$DETAILS_LINES" ]; then
+        while IFS= read -r DETAIL || [ -n "$DETAIL" ]; do
+          log "fetch detail: $DETAIL"
+        done <"$DETAILS_LINES"
+      else
+        log "fetch detail unavailable: xh capture empty"
+      fi
+    else
+      DETAILS_FILTER_RC=$?
+      log "fetch detail unavailable: line filter rc=$DETAILS_FILTER_RC"
+    fi
+  else
+    DETAILS_LIMIT_RC=$?
+    log "fetch detail unavailable: byte limiter rc=$DETAILS_LIMIT_RC"
+  fi
+  rm -f "$DETAILS_LIMITED" "$DETAILS_LINES" 2>/dev/null || true
+  # Diagnostic failure must never prevent use of the saved weather forecast.
+  return 0
+}
+
+weather_footer(){
+  case "$FETCH_STATE" in
+    CACHED) printf 'STALE / OFFLINE  %s' "$WEATHER_LAST_SUCCESS" ;;
+    OFFLINE) printf 'OFFLINE / NO SAVED FORECAST' ;;
+    *) printf 'LAST REFRESHED  %s' "$WEATHER_UPDATED" ;;
+  esac
+}
+
 fetch_weather(){
   if ! resolve_location; then
     log "weather fetch skipped: location unresolved for '$LOCATION'"
@@ -415,28 +493,37 @@ fetch_weather(){
 
   rm -f "$TMP"
   log "fetch start"
-  "$XH" -d -q -o "$TMP" get "$URL" >>"$LOG" 2>&1
+  FETCH_DETAILS="/tmp/forecastink-fetch.$$"
+  "$XH" -d --quiet --print=h --pretty=none -o "$TMP" get "$URL" >"$FETCH_DETAILS" 2>&1
   RC=$?
   BYTES=0
   [ -f "$TMP" ] && BYTES="$(wc -c <"$TMP")"
   log "fetch rc=$RC bytes=$BYTES"
 
-  if [ $RC -eq 0 ] && [ -s "$TMP" ]; then
+  if [ "$RC" -eq 0 ] && [ -s "$TMP" ] && parse_weather "$TMP"; then
+    WEATHER_LAST_SUCCESS="$(date '+%Y-%m-%d %H:%M')"
+    WEATHER_UPDATED="${WEATHER_LAST_SUCCESS##* }"
     if ! save_weather_cache; then
       log "weather cache write failed"
     fi
     FETCH_STATE=LIVE
-    WEATHER_UPDATED="$(date '+%H:%M')"
-    parse_weather "$TMP"
+    rm -f "$FETCH_DETAILS"
     return 0
   fi
+  log_fetch_error
+  rm -f "$FETCH_DETAILS"
+  [ "$RC" -eq 0 ] && log "weather response empty or unusable; keeping last valid cache"
   if weather_cache_matches; then
-    FETCH_STATE=CACHED
-    [ -n "$WEATHER_UPDATED" ] || WEATHER_UPDATED="cached"
-    parse_weather "$CACHE"
-    return 1
+    if parse_weather "$CACHE"; then
+      FETCH_STATE=CACHED
+      load_weather_cache_time
+      log "weather cache used: stale last-success=$WEATHER_LAST_SUCCESS"
+      return 1
+    fi
+    log "weather cache ignored: response unusable"
+  else
+    [ -s "$CACHE" ] && log "weather cache ignored: location identity missing or different"
   fi
-  [ -s "$CACHE" ] && log "weather cache ignored: location does not match current coordinates/timezone"
   set_offline_weather
   return 1
 }
@@ -647,7 +734,10 @@ draw_dashboard(){
 
 
   # Footer: one compact line, pushed lower to give precipitation probability more room.
-  draw_text 28 976 14 170 170 BOLD "LAST REFRESHED  ${WEATHER_UPDATED}"
+  case "$FETCH_STATE" in
+    CACHED|OFFLINE) draw_text 24 976 14 30 30 BOLD "$(weather_footer)" ;;
+    *) draw_text 28 976 14 170 170 BOLD "$(weather_footer)" ;;
+  esac
 
   "$FBINK" -q -f -s -W GC16 -w >/dev/null 2>&1
 }
